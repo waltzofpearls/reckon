@@ -51,17 +51,12 @@ func (g *GRPCServer) Run(ctx context.Context) error {
 	api.RegisterMetricsServer(grpcServer, g)
 
 	log.Println("Starting GRPC server", g.address)
-	errChan := make(chan error)
 	go func() {
-		errChan <- grpcServer.Serve(listen)
-	}()
-	select {
-	case <-ctx.Done():
+		<-ctx.Done()
+		log.Println("Gracefully stopping GRPC server")
 		grpcServer.GracefulStop()
-		return nil
-	case err := <-errChan:
-		return err
-	}
+	}()
+	return grpcServer.Serve(listen)
 }
 
 func (g *GRPCServer) tlsServerOption() (grpc.ServerOption, error) {
