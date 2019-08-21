@@ -2,65 +2,54 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"log"
-	"net"
 	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/waltzofpearls/reckon/api"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"github.com/waltzofpearls/reckon/config"
+	"github.com/waltzofpearls/reckon/prom"
 )
 
 func main() {
-	serverCert := os.Getenv("TLS_SERVER_CERT")
-	serverKey := os.Getenv("TLS_SERVER_KEY")
-	rootCA := os.Getenv("TLS_ROOT_CA")
-	serverAddress := os.Getenv("GRPC_SERVER_ADDRESS")
+	reload := make(chan bool, 1)
+	reload <- true
+	for <-reload {
+		reload <- false
 
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM([]byte(rootCA)) {
-		log.Fatal("failed to append client certs")
-	}
-	certificate, err := tls.X509KeyPair([]byte(serverCert), []byte(serverKey))
-	tlsConfig := &tls.Config{
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		Certificates: []tls.Certificate{certificate},
-		ClientCAs:    certPool,
-	}
+		ctx, cancel := context.WithCancel(context.Background())
 
-	var server Server
-	serverOption := grpc.Creds(credentials.NewTLS(tlsConfig))
-	grpcServer := grpc.NewServer(serverOption)
-	api.RegisterMetricsServer(grpcServer, server)
+		signals := make(chan os.Signal)
+		signal.Notify(signals, os.Interrupt, syscall.SIGHUP,
+			syscall.SIGTERM, syscall.SIGINT)
+		go func() {
+			sig := <-signals
+			if sig == syscall.SIGHUP {
+				log.Printf("Reloading config")
+				<-reload
+				reload <- true
+			}
+			cancel()
+		}()
 
-	log.Println("Server starting...")
-	listen, err := net.Listen("tcp", serverAddress)
-	if err != nil {
-		log.Fatalf("could not listen to %s %v", serverAddress, err)
+		err := run(ctx)
+		if err != nil && err != context.Canceled {
+			log.Fatal(err)
+		}
 	}
-	log.Fatal(grpcServer.Serve(listen))
 }
 
-type Server struct{}
+func run(ctx context.Context) error {
+	c := config.New()
+	if err := c.Load(); err != nil {
+		return err
+	}
 
-func (Server) Query(ctx context.Context, req *api.QueryMetricsRequest) (*api.QueryMetricsResponse, error) {
-	return &api.QueryMetricsResponse{
-		Metrics: []*api.Metric{
-			&api.Metric{
-				Metric: map[string]string{"__name__": "foobar"},
-				Value:  []float64{1},
-			},
-			&api.Metric{
-				Metric: map[string]string{"__name__": "bazbuz"},
-				Value:  []float64{2},
-			},
-		},
-	}, nil
-}
+	errChan := make(chan error)
+	go func() {
+		g := prom.NewGRPCServer(c)
+		errChan <- g.Run(ctx)
+	}()
 
-func (Server) Write(ctx context.Context, req *api.WriteMetricsRequest) (*empty.Empty, error) {
-	return nil, nil
+	return <-errChan
 }
