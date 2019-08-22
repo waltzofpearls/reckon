@@ -1,9 +1,12 @@
 from model.data import Data
+from model.model import Model
 
 
 def main():
     data = Data()
-    data.fetch()
+    df = data.fetch()
+    model = Model("ARIMA")
+    model.train_with(df)
 
 
 if __name__ == "__main__":

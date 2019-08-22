@@ -21,9 +21,10 @@ class Data:
             req = api.metrics_pb2.QueryMetricsRequest()
             resp = stub.Query(req)
             print(resp)
+            return resp
         except Exception as e:
             print(e)
             return e
 
-    def deliver(self):
+    def deliver(self, data):
         pass
