@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/waltzofpearls/reckon/config"
+	"github.com/waltzofpearls/reckon/model"
 	"github.com/waltzofpearls/reckon/prom"
 )
 
@@ -45,10 +46,16 @@ func run(ctx context.Context) error {
 		return err
 	}
 
+	g := prom.NewGRPCServer(c)
+	m := model.New(c)
+
 	errChan := make(chan error)
 	go func() {
-		g := prom.NewGRPCServer(c)
 		errChan <- g.Run(ctx)
+	}()
+	go func() {
+		m.Train(ctx)
+		m.UpdateOnInterval(ctx)
 	}()
 
 	return <-errChan
