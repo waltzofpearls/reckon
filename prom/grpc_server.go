@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/waltzofpearls/reckon/api"
 	"github.com/waltzofpearls/reckon/config"
@@ -21,14 +23,16 @@ type GRPCServer struct {
 	tlsKey  []byte
 	rootCA  []byte
 	address string
+	client  *Client
 }
 
-func NewGRPCServer(c *config.Config) *GRPCServer {
+func NewGRPCServer(c *config.Config, client *Client) *GRPCServer {
 	return &GRPCServer{
 		tlsCert: []byte(c.TLSServerCert),
 		tlsKey:  []byte(c.TLSServerKey),
 		rootCA:  []byte(c.TLSRootCA),
 		address: c.GRPCServerAddress,
+		client:  client,
 	}
 }
 
@@ -78,16 +82,22 @@ func (g *GRPCServer) tlsServerOption() (grpc.ServerOption, error) {
 }
 
 func (g *GRPCServer) Query(ctx context.Context, req *api.QueryMetricsRequest) (*api.QueryMetricsResponse, error) {
+	start, err := ptypes.Timestamp(req.StartTime)
+	if err != nil {
+		return nil, err
+	}
+	end, err := ptypes.Timestamp(req.EndTime)
+	if err != nil {
+		return nil, err
+	}
+	metric, err := g.client.GetMetricRangeData(
+		ctx, req.MetricName, req.Labels, start, end, 1*time.Hour, 0)
+	if err != nil {
+		return nil, err
+	}
 	return &api.QueryMetricsResponse{
 		Metrics: []*api.Metric{
-			&api.Metric{
-				Metric: map[string]string{"__name__": "foobar"},
-				Value:  []float64{1},
-			},
-			&api.Metric{
-				Metric: map[string]string{"__name__": "bazbuz"},
-				Value:  []float64{2},
-			},
+			&metric,
 		},
 	}, nil
 }

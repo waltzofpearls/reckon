@@ -1,20 +1,31 @@
 # github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto
+github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/empty
+github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
-github.com/golang/protobuf/ptypes/duration
-github.com/golang/protobuf/ptypes/timestamp
+# github.com/json-iterator/go v1.1.7
+github.com/json-iterator/go
 # github.com/kelseyhightower/envconfig v1.4.0
 github.com/kelseyhightower/envconfig
-# golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
+# github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+github.com/modern-go/concurrent
+# github.com/modern-go/reflect2 v1.0.1
+github.com/modern-go/reflect2
+# github.com/prometheus/client_golang v1.1.0
+github.com/prometheus/client_golang/api
+github.com/prometheus/client_golang/api/prometheus/v1
+# github.com/prometheus/common v0.6.0
+github.com/prometheus/common/model
+# golang.org/x/net v0.0.0-20190909003024-a7b16738d86b
 golang.org/x/net/trace
 golang.org/x/net/internal/timeseries
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/http/httpguts
 golang.org/x/net/idna
-# golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a
+# golang.org/x/sys v0.0.0-20190910064555-bbd175535a8b
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.2
 golang.org/x/text/secure/bidirule

@@ -41,21 +41,22 @@ func main() {
 }
 
 func run(ctx context.Context) error {
-	c := config.New()
-	if err := c.Load(); err != nil {
+	conf := config.New()
+	if err := conf.Load(); err != nil {
 		return err
 	}
 
-	g := prom.NewGRPCServer(c)
-	m := model.New(c)
+	promClient := prom.NewClient(conf)
+	grpcServer := prom.NewGRPCServer(conf, promClient)
+	mlModel := model.New(conf)
 
 	errChan := make(chan error)
 	go func() {
-		errChan <- g.Run(ctx)
+		errChan <- grpcServer.Run(ctx)
 	}()
 	go func() {
-		m.Train(ctx)
-		m.UpdateOnInterval(ctx)
+		mlModel.Train(ctx)
+		mlModel.UpdateOnInterval(ctx)
 	}()
 
 	return <-errChan
