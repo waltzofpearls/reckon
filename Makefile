@@ -25,6 +25,7 @@ server:
 	TLS_SERVER_CERT=$$(cat ../out/localhost.crt) \
 	TLS_SERVER_KEY=$$(cat ../out/localhost.key) \
 	GRPC_SERVER_ADDRESS=localhost:3003 \
+	PROM_CLIENT_URL=http://prometheus.rpi.topbass.studio:9090 \
 		./reckon
 
 client:
