@@ -3,6 +3,7 @@ import api.metrics_pb2_grpc
 import grpc
 import os
 from google.protobuf.timestamp_pb2 import Timestamp
+from google.protobuf.duration_pb2 import Duration
 from datetime import datetime, timedelta
 
 
@@ -20,18 +21,23 @@ class Data:
             channel = grpc.secure_channel(self.address, credentials)
             stub = api.metrics_pb2_grpc.MetricsStub(channel)
 
-            end = datetime.now()
-            end_seconds = int(end.strftime('%s'))
-            end_nanos = 0
+            end_dt = datetime.now()
+            start_dt = end_dt - timedelta(hours=24)
 
-            start = end - timedelta(hours=24)
-            start_seconds = int(start.strftime('%s'))
-            start_nanos = 0
+            start_ts, end_ts = Timestamp(), Timestamp()
+            start_ts.FromDatetime(start_dt)
+            end_ts.FromDatetime(end_dt)
+
+            step, chunkSize = Duration(), Duration()
+            step.FromTimedelta(timedelta(hours=1))
+            chunkSize.FromTimedelta(timedelta())
 
             req = api.metrics_pb2.QueryMetricsRequest(
                 metricName='steps',
-                startTime=Timestamp(seconds=start_seconds, nanos=start_nanos),
-                endTime=Timestamp(seconds=end_seconds, nanos=end_nanos),
+                start=start_ts,
+                end=end_ts,
+                step=step,
+                chunkSize=chunkSize
             )
             resp = stub.Query(req)
             print(resp)

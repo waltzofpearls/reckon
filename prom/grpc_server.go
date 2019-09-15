@@ -82,14 +82,23 @@ func (g *GRPCServer) tlsServerOption() (grpc.ServerOption, error) {
 }
 
 func (g *GRPCServer) Query(ctx context.Context, req *api.QueryMetricsRequest) (*api.QueryMetricsResponse, error) {
-	start, err := ptypes.Timestamp(req.StartTime)
+	start, err := ptypes.Timestamp(req.Start)
 	if err != nil {
 		return nil, err
 	}
-	end, err := ptypes.Timestamp(req.EndTime)
+	end, err := ptypes.Timestamp(req.End)
 	if err != nil {
 		return nil, err
 	}
+	step, err := ptypes.Duration(req.Step)
+	if err != nil {
+		return nil, err
+	}
+	chunkSize, err := ptypes.Duration(req.ChunkSize)
+	if err != nil {
+		return nil, err
+	}
+	log.Println(step, chunkSize)
 	metric, err := g.client.GetMetricRangeData(
 		ctx, req.MetricName, req.Labels, start, end, 1*time.Hour, 0)
 	if err != nil {
