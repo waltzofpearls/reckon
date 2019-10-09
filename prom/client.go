@@ -98,8 +98,8 @@ func vectorToMetric(value model.Value) (reckonAPI.Metric, error) {
 	metric = reckonAPI.Metric{
 		Name:   string(sample.Metric[model.MetricNameLabel]),
 		Labels: labels,
-		Values: []*reckonAPI.SamplePair{
-			&reckonAPI.SamplePair{
+		Values: []*reckonAPI.Metric_SamplePair{
+			&reckonAPI.Metric_SamplePair{
 				Value: float64(sample.Value),
 				Time:  timestamp,
 			},
@@ -166,7 +166,7 @@ func updateMetricWith(value model.Value, metric *reckonAPI.Metric) {
 			log.Println("failed to convert time to proto timestamp")
 			continue
 		}
-		metric.Values = append(metric.Values, &reckonAPI.SamplePair{
+		metric.Values = append(metric.Values, &reckonAPI.Metric_SamplePair{
 			Value: float64(v.Value),
 			Time:  timestamp,
 		})

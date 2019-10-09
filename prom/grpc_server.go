@@ -54,10 +54,10 @@ func (g *GRPCServer) Run(ctx context.Context) error {
 	grpcServer := grpc.NewServer(serverOption)
 	api.RegisterMetricsServer(grpcServer, g)
 
-	log.Println("Starting GRPC server", g.address)
+	log.Println("Starting gRPC server", g.address)
 	go func() {
 		<-ctx.Done()
-		log.Println("Gracefully stopping GRPC server")
+		log.Println("Gracefully stopping gRPC server")
 		grpcServer.GracefulStop()
 	}()
 	return grpcServer.Serve(listen)

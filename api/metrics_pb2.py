@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='api',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x11\x61pi/metrics.proto\x12\x03\x61pi\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/duration.proto\"\xb9\x02\n\x13QueryMetricsRequest\x12\x12\n\nmetricName\x18\x01 \x01(\t\x12\x34\n\x06labels\x18\x02 \x03(\x0b\x32$.api.QueryMetricsRequest.LabelsEntry\x12)\n\x05start\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\'\n\x03\x65nd\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\'\n\x04step\x18\x05 \x01(\x0b\x32\x19.google.protobuf.Duration\x12,\n\tchunkSize\x18\x06 \x01(\x0b\x32\x19.google.protobuf.Duration\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"4\n\x14QueryMetricsResponse\x12\x1c\n\x07metrics\x18\x01 \x03(\x0b\x32\x0b.api.Metric\"\x8f\x01\n\x06Metric\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\'\n\x06labels\x18\x02 \x03(\x0b\x32\x17.api.Metric.LabelsEntry\x12\x1f\n\x06values\x18\x03 \x03(\x0b\x32\x0f.api.SamplePair\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"E\n\nSamplePair\x12(\n\x04time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\r\n\x05value\x18\x02 \x01(\x01\"3\n\x13WriteMetricsRequest\x12\x1c\n\x07metrics\x18\x01 \x03(\x0b\x32\x0b.api.Metric2\x82\x01\n\x07Metrics\x12<\n\x05Query\x12\x18.api.QueryMetricsRequest\x1a\x19.api.QueryMetricsResponse\x12\x39\n\x05Write\x12\x18.api.WriteMetricsRequest\x1a\x16.google.protobuf.Emptyb\x06proto3')
+  serialized_pb=_b('\n\x11\x61pi/metrics.proto\x12\x03\x61pi\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/duration.proto\"\xb9\x02\n\x13QueryMetricsRequest\x12\x12\n\nmetricName\x18\x01 \x01(\t\x12\x34\n\x06labels\x18\x02 \x03(\x0b\x32$.api.QueryMetricsRequest.LabelsEntry\x12)\n\x05start\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\'\n\x03\x65nd\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\'\n\x04step\x18\x05 \x01(\x0b\x32\x19.google.protobuf.Duration\x12,\n\tchunkSize\x18\x06 \x01(\x0b\x32\x19.google.protobuf.Duration\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"4\n\x14QueryMetricsResponse\x12\x1c\n\x07metrics\x18\x01 \x03(\x0b\x32\x0b.api.Metric\"\xdd\x01\n\x06Metric\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\'\n\x06labels\x18\x02 \x03(\x0b\x32\x17.api.Metric.LabelsEntry\x12&\n\x06values\x18\x03 \x03(\x0b\x32\x16.api.Metric.SamplePair\x1a-\n\x0bLabelsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x45\n\nSamplePair\x12(\n\x04time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\r\n\x05value\x18\x02 \x01(\x01\"3\n\x13WriteMetricsRequest\x12\x1c\n\x07metrics\x18\x01 \x03(\x0b\x32\x0b.api.Metric2\x82\x01\n\x07Metrics\x12<\n\x05Query\x12\x18.api.QueryMetricsRequest\x1a\x19.api.QueryMetricsResponse\x12\x39\n\x05Write\x12\x18.api.WriteMetricsRequest\x1a\x16.google.protobuf.Emptyb\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,google_dot_protobuf_dot_duration__pb2.DESCRIPTOR,])
 
@@ -201,6 +201,43 @@ _METRIC_LABELSENTRY = _descriptor.Descriptor(
   serialized_end=434,
 )
 
+_METRIC_SAMPLEPAIR = _descriptor.Descriptor(
+  name='SamplePair',
+  full_name='api.Metric.SamplePair',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='time', full_name='api.Metric.SamplePair.time', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='api.Metric.SamplePair.value', index=1,
+      number=2, type=1, cpp_type=5, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=643,
+  serialized_end=712,
+)
+
 _METRIC = _descriptor.Descriptor(
   name='Metric',
   full_name='api.Metric',
@@ -232,7 +269,7 @@ _METRIC = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_METRIC_LABELSENTRY, ],
+  nested_types=[_METRIC_LABELSENTRY, _METRIC_SAMPLEPAIR, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -242,45 +279,7 @@ _METRIC = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=491,
-  serialized_end=634,
-)
-
-
-_SAMPLEPAIR = _descriptor.Descriptor(
-  name='SamplePair',
-  full_name='api.SamplePair',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='time', full_name='api.SamplePair.time', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='value', full_name='api.SamplePair.value', index=1,
-      number=2, type=1, cpp_type=5, label=1,
-      has_default_value=False, default_value=float(0),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=636,
-  serialized_end=705,
+  serialized_end=712,
 )
 
 
@@ -310,8 +309,8 @@ _WRITEMETRICSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=707,
-  serialized_end=758,
+  serialized_start=714,
+  serialized_end=765,
 )
 
 _QUERYMETRICSREQUEST_LABELSENTRY.containing_type = _QUERYMETRICSREQUEST
@@ -322,14 +321,14 @@ _QUERYMETRICSREQUEST.fields_by_name['step'].message_type = google_dot_protobuf_d
 _QUERYMETRICSREQUEST.fields_by_name['chunkSize'].message_type = google_dot_protobuf_dot_duration__pb2._DURATION
 _QUERYMETRICSRESPONSE.fields_by_name['metrics'].message_type = _METRIC
 _METRIC_LABELSENTRY.containing_type = _METRIC
+_METRIC_SAMPLEPAIR.fields_by_name['time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+_METRIC_SAMPLEPAIR.containing_type = _METRIC
 _METRIC.fields_by_name['labels'].message_type = _METRIC_LABELSENTRY
-_METRIC.fields_by_name['values'].message_type = _SAMPLEPAIR
-_SAMPLEPAIR.fields_by_name['time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+_METRIC.fields_by_name['values'].message_type = _METRIC_SAMPLEPAIR
 _WRITEMETRICSREQUEST.fields_by_name['metrics'].message_type = _METRIC
 DESCRIPTOR.message_types_by_name['QueryMetricsRequest'] = _QUERYMETRICSREQUEST
 DESCRIPTOR.message_types_by_name['QueryMetricsResponse'] = _QUERYMETRICSRESPONSE
 DESCRIPTOR.message_types_by_name['Metric'] = _METRIC
-DESCRIPTOR.message_types_by_name['SamplePair'] = _SAMPLEPAIR
 DESCRIPTOR.message_types_by_name['WriteMetricsRequest'] = _WRITEMETRICSREQUEST
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -363,19 +362,20 @@ Metric = _reflection.GeneratedProtocolMessageType('Metric', (_message.Message,),
     # @@protoc_insertion_point(class_scope:api.Metric.LabelsEntry)
     })
   ,
+
+  'SamplePair' : _reflection.GeneratedProtocolMessageType('SamplePair', (_message.Message,), {
+    'DESCRIPTOR' : _METRIC_SAMPLEPAIR,
+    '__module__' : 'api.metrics_pb2'
+    # @@protoc_insertion_point(class_scope:api.Metric.SamplePair)
+    })
+  ,
   'DESCRIPTOR' : _METRIC,
   '__module__' : 'api.metrics_pb2'
   # @@protoc_insertion_point(class_scope:api.Metric)
   })
 _sym_db.RegisterMessage(Metric)
 _sym_db.RegisterMessage(Metric.LabelsEntry)
-
-SamplePair = _reflection.GeneratedProtocolMessageType('SamplePair', (_message.Message,), {
-  'DESCRIPTOR' : _SAMPLEPAIR,
-  '__module__' : 'api.metrics_pb2'
-  # @@protoc_insertion_point(class_scope:api.SamplePair)
-  })
-_sym_db.RegisterMessage(SamplePair)
+_sym_db.RegisterMessage(Metric.SamplePair)
 
 WriteMetricsRequest = _reflection.GeneratedProtocolMessageType('WriteMetricsRequest', (_message.Message,), {
   'DESCRIPTOR' : _WRITEMETRICSREQUEST,
@@ -394,8 +394,8 @@ _METRICS = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=761,
-  serialized_end=891,
+  serialized_start=768,
+  serialized_end=898,
   methods=[
   _descriptor.MethodDescriptor(
     name='Query',
