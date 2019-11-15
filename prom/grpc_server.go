@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"time"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -98,9 +97,8 @@ func (g *GRPCServer) Query(ctx context.Context, req *api.QueryMetricsRequest) (*
 	if err != nil {
 		return nil, err
 	}
-	log.Println(step, chunkSize)
 	metric, err := g.client.GetMetricRangeData(
-		ctx, req.MetricName, req.Labels, start, end, 1*time.Hour, 0)
+		ctx, req.MetricName, req.Labels, start, end, chunkSize, step)
 	if err != nil {
 		return nil, err
 	}

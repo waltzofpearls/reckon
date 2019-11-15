@@ -22,7 +22,7 @@ class Data:
             stub = api.metrics_pb2_grpc.MetricsStub(channel)
 
             end_dt = datetime.now()
-            start_dt = end_dt - timedelta(hours=24)
+            start_dt = end_dt - timedelta(hours=1)
 
             start_ts, end_ts = Timestamp(), Timestamp()
             start_ts.FromDatetime(start_dt)
