@@ -1,36 +1,26 @@
-all: build
+APP = reckon
 
+.PHONY: build
 build:
-	go build -mod=vendor
+	cargo build --release
 
-proto:
-	protoc --go_out=plugins=grpc:. api/*.proto
-	python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. api/*.proto
-	@tree -hrtC api
+.PHONY: run
+run:
+	cargo run -- --config $(APP).toml --log-level info
 
-DOCKER_IMG := reckon
-docker:
-	docker build -t $(DOCKER_IMG) .
-	docker run -it --rm \
-		-e "TLS_ROOT_CA=$$(cat ../out/Reckon_Root_CA.crt)" \
-		-e "TLS_SERVER_CERT=$$(cat ../out/localhost.crt)" \
-		-e "TLS_SERVER_KEY=$$(cat ../out/localhost.key)" \
-		-e "TLS_CLIENT_CERT=$$(cat ../out/StatsModel.crt)" \
-		-e "TLS_CLIENT_KEY=$$(cat ../out/StatsModel.key)" \
-		-e "GRPC_SERVER_ADDRESS=localhost:3003" \
-		$(DOCKER_IMG) /bin/bash
+.PHONY: lint
+lint:
+	cargo clippy --workspace --tests --all-features -- -D warnings
 
-server:
-	TLS_ROOT_CA=$$(cat ../out/Reckon_Root_CA.crt) \
-	TLS_SERVER_CERT=$$(cat ../out/localhost.crt) \
-	TLS_SERVER_KEY=$$(cat ../out/localhost.key) \
-	GRPC_SERVER_ADDRESS=localhost:3003 \
-	PROM_CLIENT_URL=http://prometheus.rpi.topbass.studio:9090 \
-		./reckon
+.PHONY: test
+test:
+	cargo test
 
-client:
-	TLS_ROOT_CA=$$(cat ../out/Reckon_Root_CA.crt) \
-	TLS_CLIENT_CERT=$$(cat ../out/StatsModel.crt) \
-	TLS_CLIENT_KEY=$$(cat ../out/StatsModel.key) \
-	GRPC_SERVER_ADDRESS=localhost:3003 \
-		python main.py
+.PHONY: cover
+cover:
+	docker run \
+		--security-opt seccomp=unconfined \
+		-v ${PWD}:/volume \
+		xd009642/tarpaulin \
+		cargo tarpaulin --out Html --output-dir ./target
+	open target/tarpaulin-report.html

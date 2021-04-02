@@ -1,12 +1,37 @@
-FROM golang:1.12-stretch AS builder
-WORKDIR /reckon/
-COPY . .
-RUN make
+ARG APP_NAME=reckon
 
-FROM python:3.6-slim-stretch
-WORKDIR /reckon/
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+FROM rust:1.51.0-buster as builder
+
+ARG APP_NAME
+WORKDIR /app/${APP_NAME}
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    pkg-config \
+    libssl-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src \
+ && echo 'fn main() {println!("if you see this, the build broke")}' > src/main.rs \
+ && cargo build --release \
+ && rm -f target/release/deps/${APP_NAME}*
+
 COPY . .
-COPY --from=builder /reckon/reckon .
-CMD ["./reckon"]
+RUN cargo build --release
+
+FROM debian:buster-slim
+
+ARG APP_NAME
+ENV APP_NAME=${APP_NAME}
+WORKDIR /usr/local/bin
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    libssl-dev \
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/${APP_NAME}/target/release/${APP_NAME} ${APP_NAME}
+
+CMD ${APP_NAME}
