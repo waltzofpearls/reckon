@@ -1,7 +1,7 @@
 APP := reckon
 IMAGE := $(APP)
 PROMETHEUS := http://prometheus.rpi.topbass.studio:9090
-METRICS := sensehat_temperature
+METRICS := sensehat_temperature,sensehat_humidity
 
 .PHONY: all
 all: build

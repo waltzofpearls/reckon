@@ -63,7 +63,6 @@ func (f Forecasts) Nearest(timestamp int64) Forecast {
 
 func InitPythonModule(lg *zap.Logger) (module *python3.PyObject, cleanup func(), err error) {
 	python3.Py_Initialize()
-
 	if !python3.Py_IsInitialized() {
 		lg.Error("error initializing python interpreter")
 		return nil, nil, errors.New("error initializing python interpreter")
@@ -94,8 +93,12 @@ func InitPythonModule(lg *zap.Logger) (module *python3.PyObject, cleanup func(),
 		lg.Error("failed to add module prophet_model")
 		return nil, nil, errors.New("failed to add module prophet_model")
 	}
+
+	state := python3.PyEval_SaveThread()
+
 	return module, func() {
-		defer python3.Py_Finalize()
-		defer imported.DecRef()
+		imported.DecRef()
+		python3.PyEval_RestoreThread(state)
+		python3.Py_Finalize()
 	}, nil
 }
