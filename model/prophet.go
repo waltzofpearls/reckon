@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	"github.com/DataDog/go-python3"
@@ -21,6 +22,10 @@ func NewProphet(lg *zap.Logger) Prophet {
 
 func (p Prophet) Train(ctx context.Context, module *python3.PyObject, data prom.Metric, duration time.Duration) Forecasts {
 	p.logger.Info("train model with data", zap.Int("length", len(data.Values)), zap.String("duration", duration.String()))
+
+	runtime.LockOSThread()
+	s := python3.PyGILState_Ensure()
+	defer python3.PyGILState_Release(s)
 
 	argData := python3.PyList_New(len(data.Values)) // return value: new reference, gets stolen later
 	for i, value := range data.Values {
