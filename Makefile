@@ -1,36 +1,36 @@
+APP := reckon
+IMAGE := $(APP)
+PROMETHEUS := http://prometheus.rpi.topbass.studio:9090
+METRICS := sensehat_temperature
+
+.PHONY: all
 all: build
 
+.PHONY: build
 build:
-	go build -mod=vendor
+	go build
 
-proto:
-	protoc --go_out=plugins=grpc:. api/*.proto
-	python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. api/*.proto
-	@tree -hrtC api
+.PHONY: run
+run: build
+	PROM_CLIENT_URL=$(PROMETHEUS) \
+	WATCH_LIST=$(METRICS) \
+		./$(APP)
 
-DOCKER_IMG := reckon
+.PHONY: venv
+venv:
+	$(shell mkvirtualenv $(APP))
+	pip install -r ./model/requirements.txt
+
+.PHONY: vrun
+vrun:
+	$(shell workon $(APP))
+	PYTHONPATH=~/.virtualenvs/$(APP)/lib/python3.7/site-packages/:$$PYTHONPATH make run
+	$(shell deactivate)
+
+.PHONY: docker
 docker:
-	docker build -t $(DOCKER_IMG) .
+	docker build -t $(IMAGE) .
 	docker run -it --rm \
-		-e "TLS_ROOT_CA=$$(cat ../out/Reckon_Root_CA.crt)" \
-		-e "TLS_SERVER_CERT=$$(cat ../out/localhost.crt)" \
-		-e "TLS_SERVER_KEY=$$(cat ../out/localhost.key)" \
-		-e "TLS_CLIENT_CERT=$$(cat ../out/StatsModel.crt)" \
-		-e "TLS_CLIENT_KEY=$$(cat ../out/StatsModel.key)" \
-		-e "GRPC_SERVER_ADDRESS=localhost:3003" \
-		$(DOCKER_IMG) /bin/bash
-
-server:
-	TLS_ROOT_CA=$$(cat ../out/Reckon_Root_CA.crt) \
-	TLS_SERVER_CERT=$$(cat ../out/localhost.crt) \
-	TLS_SERVER_KEY=$$(cat ../out/localhost.key) \
-	GRPC_SERVER_ADDRESS=localhost:3003 \
-	PROM_CLIENT_URL=http://prometheus.rpi.topbass.studio:9090 \
-		./reckon
-
-client:
-	TLS_ROOT_CA=$$(cat ../out/Reckon_Root_CA.crt) \
-	TLS_CLIENT_CERT=$$(cat ../out/StatsModel.crt) \
-	TLS_CLIENT_KEY=$$(cat ../out/StatsModel.key) \
-	GRPC_SERVER_ADDRESS=localhost:3003 \
-		python main.py
+		-e "PROM_CLIENT_URL=$(PROMETHEUS)" \
+		-e "WATCH_LIST=$(METRICS)" \
+		$(IMAGE)

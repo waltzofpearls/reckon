@@ -5,32 +5,77 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
+	"github.com/robfig/cron/v3"
+	"go.uber.org/zap"
 )
 
 type Config struct {
-	TLSRootCA             string `envconfig:"TLS_ROOT_CA"`
-	TLSServerCert         string `envconfig:"TLS_SERVER_CERT"`
-	TLSServerKey          string `envconfig:"TLS_SERVER_KEY"`
-	TLSClientCert         string `envconfig:"TLS_CLIENT_CERT"`
-	TLSClientKey          string `envconfig:"TLS_CLIENT_KEY"`
-	GRPCServerAddress     string `envconfig:"GRPC_SERVER_ADDRESS"`
-	ModelTrainingInterval int64  `envconfig:"MODEL_TRAINING_INTERVAL" default:"10"`
+	Schedule string `envconfig:"SCHEDULE" default:"@every 120m"`
+	Timezone string `envconfig:"TIMEZONE" default:"America/Vancouver"`
+
+	PromExporterAddr string `envconfig:"PROM_EXPORTER_ADDR" default:":8080"`
 
 	PromClientURL                string `envconfig:"PROM_CLIENT_URL"`
 	PromClientTLSCA              string `envconfig:"PROM_CLIENT_TLS_CA"`
 	PromClientTLSCert            string `envconfig:"PROM_CLIENT_TLS_CERT"`
 	PromClientTLSKey             string `envconfig:"PROM_CLIENT_TLS_KEY"`
 	PromClientInsecureSkipVerify bool   `envconfig:"PROM_CLIENT_INSECURE_SKIP_VERIFY"`
+
+	WatchList []string `envconfig:"WATCH_LIST"`
+	Models    []string `envconfig:"MODELS" default:"Prophet"`
+
+	DefaultChunkSize time.Duration `envconfig:"DEFAULT_CHUNK_SIZE" default:"120m"`
+	RollingWindow    time.Duration `envconfig:"ROLLING_WINDOW" default:"72h"`
+
+	logger    *zap.Logger
+	location  *time.Location
+	chunkSize time.Duration
 }
 
-func New() *Config {
-	return &Config{}
+func New(lg *zap.Logger) *Config {
+	return &Config{
+		logger: lg,
+	}
 }
 
 func (c *Config) Load() error {
 	return envconfig.Process("", c)
+}
+
+func (c *Config) Location() *time.Location {
+	if c.location == nil {
+		var err error
+		if c.location, err = time.LoadLocation(c.Timezone); err != nil {
+			c.logger.Error("cannot parse timezone", zap.String("tz", c.Timezone), zap.Error(err))
+			c.location = time.Local
+		}
+	}
+	return c.location
+}
+
+func (c *Config) ChunkSize() time.Duration {
+	if c.chunkSize == 0 {
+		now := time.Now().In(c.Location())
+		parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
+		schedule, err := parser.Parse(c.Schedule)
+		if err != nil {
+			c.chunkSize = c.DefaultChunkSize
+		} else {
+			c.chunkSize = RoundUpDuration(schedule.Next(now).Sub(now), time.Minute)
+		}
+	}
+	return c.chunkSize
+}
+
+func RoundUpDuration(toRound, roundOn time.Duration) time.Duration {
+	toRound = toRound.Round(roundOn)
+	if toRound == 0 {
+		toRound += roundOn
+	}
+	return toRound
 }
 
 func (c *Config) PromClientTLS() (*tls.Config, error) {

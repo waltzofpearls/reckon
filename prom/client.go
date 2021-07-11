@@ -4,43 +4,45 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
-	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
-	promAPI "github.com/prometheus/client_golang/api"
-	promAPIV1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/client_golang/api"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
-	reckonAPI "github.com/waltzofpearls/reckon/api"
 	"github.com/waltzofpearls/reckon/config"
+	"go.uber.org/zap"
 )
 
 type Client struct {
-	api promAPIV1.API
-
-	*config.Config
+	prom   v1.API
+	config *config.Config
+	logger *zap.Logger
 }
 
-func NewClient(config *config.Config) *Client {
+func NewClient(cf *config.Config, lg *zap.Logger) *Client {
 	return &Client{
-		Config: config,
+		config: cf,
+		logger: lg,
 	}
 }
 
-func (c *Client) getAPI() (promAPIV1.API, error) {
-	if c.api != nil {
-		return c.api, nil
+func (c *Client) getOrInit() (v1.API, error) {
+	if c.prom != nil {
+		return c.prom, nil
 	}
 
-	tlsConfig, err := c.PromClientTLS()
+	if c.config.PromClientURL == "" {
+		return nil, errors.New("PROM_CLIENT_URL cannot be empty")
+	}
+
+	tlsConfig, err := c.config.PromClientTLS()
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := promAPI.NewClient(promAPI.Config{
-		Address: c.PromClientURL,
+	client, err := api.NewClient(api.Config{
+		Address: c.config.PromClientURL,
 		RoundTripper: &http.Transport{
 			TLSClientConfig:   tlsConfig,
 			DisableKeepAlives: true,
@@ -50,76 +52,57 @@ func (c *Client) getAPI() (promAPIV1.API, error) {
 		return nil, err
 	}
 
-	return promAPIV1.NewAPI(client), nil
+	c.prom = v1.NewAPI(client)
+	return c.prom, nil
 }
 
-type labelSet map[string]string
-
-func (c *Client) GetCurrentMetricValue(
-	ctx context.Context, metricName string, labels labelSet,
-) (reckonAPI.Metric, error) {
-	clientAPI, err := c.getAPI()
+func (c *Client) GetCurrentMetricValue(ctx context.Context, query string) ([]Metric, error) {
+	prom, err := c.getOrInit()
 	if err != nil {
-		return reckonAPI.Metric{}, err
+		return nil, err
 	}
-	query := createQueryFrom(metricName, labels)
-	value, _, _ := clientAPI.Query(ctx, query, time.Time{})
-	return vectorToMetric(value)
+	value, warnings, err := prom.Query(ctx, query, time.Time{})
+	if len(warnings) > 0 {
+		c.logger.Warn("warnings returned from prometheus range query", zap.Strings("warnings", warnings))
+	}
+	if err != nil {
+		c.logger.Error("failed querying prometheus metrics range", zap.String("query", query), zap.Error(err))
+		return nil, errors.New("failed querying prometheus metrics range")
+	}
+	return c.metricsFrom(value)
 }
 
-func createQueryFrom(metricName string, labels labelSet) string {
-	query := metricName
-	if len(labels) > 0 {
-		list := make([]string, len(labels))
-		for k, v := range labels {
-			list = append(list, fmt.Sprintf("%[1]s='%[2]s'", k, v))
-		}
-		query += fmt.Sprintf("{%s}", strings.Join(list, ", "))
-	}
-	return query
-}
-
-func vectorToMetric(value model.Value) (reckonAPI.Metric, error) {
-	var metric reckonAPI.Metric
+func (c *Client) metricsFrom(value model.Value) ([]Metric, error) {
 	vector := value.(model.Vector)
 	if vector.Len() == 0 {
-		return metric, nil
+		c.logger.Warn("empty vector")
+		return nil, nil
 	}
-	sample := vector[0]
-	timestamp, err := ptypes.TimestampProto(sample.Timestamp.Time())
-	if err != nil {
-		return metric, err
-	}
-	labels := make(map[string]string)
-	for k, v := range sample.Metric {
-		labels[string(k)] = string(v)
-	}
-	delete(labels, model.MetricNameLabel)
-	metric = reckonAPI.Metric{
-		Name:   string(sample.Metric[model.MetricNameLabel]),
-		Labels: labels,
-		Values: []*reckonAPI.Metric_SamplePair{
-			&reckonAPI.Metric_SamplePair{
-				Value: float64(sample.Value),
-				Time:  timestamp,
+	var metrics []Metric
+	for _, sample := range vector {
+		labels := make(map[string]string)
+		for k, v := range sample.Metric {
+			labels[string(k)] = string(v)
+		}
+		delete(labels, model.MetricNameLabel)
+		metrics = append(metrics, Metric{
+			Name:   string(sample.Metric[model.MetricNameLabel]),
+			Labels: labels,
+			Values: []SamplePair{
+				{
+					Value: float64(sample.Value),
+					Time:  sample.Timestamp.Time(),
+				},
 			},
-		},
+		})
 	}
-	return metric, nil
+	return metrics, nil
 }
 
-func (c *Client) GetMetricRangeData(
-	ctx context.Context,
-	metricName string,
-	labels labelSet,
-	start, end time.Time,
-	step time.Duration,
-	chunkSize time.Duration,
-) (reckonAPI.Metric, error) {
-	var metric reckonAPI.Metric
-	clientAPI, err := c.getAPI()
+func (c *Client) GetMetricRangeData(ctx context.Context, query string, start, end time.Time, chunkSize time.Duration) ([]Metric, error) {
+	prom, err := c.getOrInit()
 	if err != nil {
-		return metric, err
+		return nil, err
 	}
 	if chunkSize == 0 {
 		chunkSize = end.Sub(start)
@@ -128,47 +111,63 @@ func (c *Client) GetMetricRangeData(
 	end = end.Round(time.Second)
 	chunkSize = chunkSize.Round(time.Second)
 	if end.Sub(start).Seconds() < chunkSize.Seconds() {
-		return metric, errors.New("Error: specified chunkSize is too big")
+		return nil, errors.New("specified chunkSize is too big")
 	}
-	query := createQueryFrom(metricName, labels)
+
+	metricMap := make(map[string]Metric)
+
 	for start.Before(end) {
-		if start.Add(chunkSize).After(end) {
+		to := start.Add(chunkSize)
+		if to.After(end) {
 			chunkSize = end.Sub(start)
 		}
-		value, _, _ := clientAPI.QueryRange(ctx, query, promAPIV1.Range{
-			Start: start,
-			End:   end,
-			Step:  step,
-		})
-		updateMetricWith(value, &metric)
-		start = start.Add(chunkSize)
+		chunked := fmt.Sprintf("%s[%vs]", query, chunkSize.Seconds())
+		value, warnings, err := prom.Query(ctx, chunked, to)
+		if len(warnings) > 0 {
+			c.logger.Warn("warnings returned from prometheus range query", zap.Strings("warnings", warnings))
+		}
+		if err != nil {
+			c.logger.Error("failed querying prometheus metrics range",
+				zap.Time("start", start), zap.Time("end", end), zap.Duration("chunk_size", chunkSize),
+				zap.String("query", chunked), zap.Time("to", to), zap.Error(err))
+			return nil, errors.New("failed querying prometheus metrics range")
+		}
+		c.updateMetrics(value, metricMap)
+		start = to
 	}
-	return metric, nil
+
+	var metrics []Metric
+	for _, metric := range metricMap {
+		metrics = append(metrics, metric)
+	}
+	return metrics, nil
 }
 
-func updateMetricWith(value model.Value, metric *reckonAPI.Metric) {
-	matrix := value.(model.Matrix)
-	if matrix.Len() == 0 {
-		log.Println("empty matrix")
+func (c *Client) updateMetrics(value model.Value, metrics map[string]Metric) {
+	if value == nil {
+		c.logger.Warn("model.Value is nil")
 		return
 	}
-	sampleStream := matrix[0]
-	labels := make(map[string]string)
-	for k, v := range sampleStream.Metric {
-		labels[string(k)] = string(v)
+	matrix := value.(model.Matrix)
+	if matrix.Len() == 0 {
+		c.logger.Warn("empty matrix")
+		return
 	}
-	delete(labels, model.MetricNameLabel)
-	metric.Name = string(sampleStream.Metric[model.MetricNameLabel])
-	metric.Labels = labels
-	for _, v := range sampleStream.Values {
-		timestamp, err := ptypes.TimestampProto(v.Timestamp.Time())
-		if err != nil {
-			log.Println("failed to convert time to proto timestamp")
-			continue
+	for _, sample := range matrix {
+		labels := make(map[string]string)
+		for k, v := range sample.Metric {
+			labels[string(k)] = string(v)
 		}
-		metric.Values = append(metric.Values, &reckonAPI.Metric_SamplePair{
-			Value: float64(v.Value),
-			Time:  timestamp,
-		})
+		delete(labels, model.MetricNameLabel)
+		metric := metrics[sample.Metric.String()]
+		metric.Name = string(sample.Metric[model.MetricNameLabel])
+		metric.Labels = labels
+		for _, v := range sample.Values {
+			metric.Values = append(metric.Values, SamplePair{
+				Value: float64(v.Value),
+				Time:  v.Timestamp.Time(),
+			})
+		}
+		metrics[sample.Metric.String()] = metric
 	}
 }
