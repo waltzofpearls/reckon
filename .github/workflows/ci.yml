@@ -1,0 +1,30 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go_version: ["1.16.5"]
+        python_version: ["3.7.6"]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python_version }}
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go_version }}
+      - name: Print version info
+        run: |
+          which python
+          which go
+          python -V
+          go version
+      - name: Run go unit tests
+        run: |
+          export PKG_CONFIG_PATH=/opt/hostedtoolcache/Python/${{ matrix.python_version }}/x64/lib/pkgconfig:$PKG_CONFIG_PATH
+          go test -cover ./...
