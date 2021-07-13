@@ -73,26 +73,17 @@ func (m *Metric) Equal(to Metric) bool {
 	return m.Name == to.Name && twoStringMapsAreEqual(m.Labels, to.Labels)
 }
 
+var errCannotAppendDifferentMetric = errors.New("new and original metrics are not equal")
+
 func (m *Metric) Append(data Metric, rollingWindow time.Duration) error {
 	if !m.Equal(data) {
-		return errors.New("new and original metrics are not equal")
+		return errCannotAppendDifferentMetric
 	}
 
 	existingDataStart := m.Start()
 	existingDataEnd := m.End()
 	newDataStart := data.Start()
 	newDataEnd := data.End()
-
-	if (newDataStart.After(existingDataStart) || newDataStart.Equal(existingDataStart)) &&
-		(newDataEnd.Before(existingDataEnd) || newDataEnd.Equal(existingDataEnd)) {
-		// noop if the entire new data set is a part of existing data set
-		return nil
-	}
-	if (existingDataStart.After(newDataStart) || existingDataStart.Equal(newDataStart)) &&
-		(existingDataEnd.Before(newDataEnd) || existingDataEnd.Equal(newDataEnd)) {
-		// noop if the entire existing data set is a part of new data set
-		return nil
-	}
 
 	existingDataValues := make(SamplePairs, len(m.Values))
 	newDataValues := make(SamplePairs, len(data.Values))
@@ -101,22 +92,33 @@ func (m *Metric) Append(data Metric, rollingWindow time.Duration) error {
 	copy(existingDataValues, m.Values)
 	copy(newDataValues, data.Values)
 
-	if existingDataEnd.Before(newDataStart) || existingDataEnd.Equal(newDataStart) {
-		// no intersection between existing and new data, and new data set is newer than existing data set
-		updatedValues = append(existingDataValues, newDataValues...)
-	} else if newDataEnd.Before(existingDataStart) || newDataEnd.Equal(existingDataStart) {
-		// no intersection between existing and new data, and existing data set is newer than new data set
-		updatedValues = append(newDataValues, existingDataValues...)
+	if (newDataStart.After(existingDataStart) || newDataStart.Equal(existingDataStart)) &&
+		(newDataEnd.Before(existingDataEnd) || newDataEnd.Equal(existingDataEnd)) {
+		// new data set is a part of existing data set
+		updatedValues = existingDataValues
+	} else if (existingDataStart.After(newDataStart) || existingDataStart.Equal(newDataStart)) &&
+		(existingDataEnd.Before(newDataEnd) || existingDataEnd.Equal(newDataEnd)) {
+		// existing data set is a part of new data set
+		updatedValues = newDataValues
 	} else {
-		// has intersection between existing and new data, remove overlapping data and concatenate the rest
-		var sliceFrom int
-		for i, pair := range newDataValues {
-			if pair.Time.After(existingDataEnd) {
-				sliceFrom = i
-				break
+		// existing and new data sets may or may not have an intersection
+		if existingDataEnd.Before(newDataStart) || existingDataEnd.Equal(newDataStart) {
+			// no intersection and new data set is newer than existing data set
+			updatedValues = append(existingDataValues, newDataValues...)
+		} else if newDataEnd.Before(existingDataStart) || newDataEnd.Equal(existingDataStart) {
+			// no intersection and existing data set is newer than new data set
+			updatedValues = append(newDataValues, existingDataValues...)
+		} else {
+			// has intersection between existing and new data, remove overlapping data and concatenate the rest
+			var sliceFrom int
+			for i, pair := range newDataValues {
+				if pair.Time.After(existingDataEnd) {
+					sliceFrom = i
+					break
+				}
 			}
+			updatedValues = append(existingDataValues, newDataValues[sliceFrom:]...)
 		}
-		updatedValues = append(existingDataValues, newDataValues[sliceFrom:]...)
 	}
 
 	rollingWindowStart := updatedValues[len(updatedValues)-1].Time.Add(-rollingWindow)
