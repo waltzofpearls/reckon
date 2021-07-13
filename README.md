@@ -12,7 +12,8 @@ Reckon is a prometheus exporter for time series forecasting and anomaly detectio
 with a defined time range, train a predictive model with those metrics, and then expose the original and forecasted
 metrics back through a prometheus HTTP endpoint.
 
-An exmaple of original and forecasted metrics generated from [Prophet](https://facebook.github.io/prophet/):
+An exmaple of original and forecasted metrics generated from [Prophet](https://facebook.github.io/prophet/) and
+exposed from reckon:
 
 ```
 # HELP sensehat_humidity_prophet Prophet forecasted metric value
@@ -47,7 +48,7 @@ PROMETHEUS={prometheus_server_address} WATCH_LIST={comma_separated_metric_names}
 #### With Go and Virtualenv
 
 If you prefer running reckon without docker, or you would like to build and run the binary locally, you will need
-Go, Python and Virtualenv. Make sure you will Go 1.16+ and Python 3.7
+Go, Python and Virtualenv. Make sure you have Go 1.16+ and Python 3.7
 
 - Go: `brew install go` or [follow this gudie](https://golang.org/doc/install)
 - Pyenv: `brew install pyenv` or [follow this guide](https://github.com/pyenv/pyenv#installation)
