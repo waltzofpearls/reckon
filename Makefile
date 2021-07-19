@@ -1,8 +1,10 @@
 APP := reckon
 IMAGE := $(APP)
-PROMETHEUS ?= http://prometheus.rpi.topbass.studio:9090
+PORT := 8080:8080
+PROM_CLIENT_URL ?= http://prometheus.rpi.topbass.studio:9090
+PROM_EXPORTER_ADDR ?= :8080
 WATCH_LIST ?= sensehat_temperature,sensehat_humidity
-SCHEDULE ?= @every 5m
+SCHEDULE ?= @every 10m
 
 .PHONY: all
 all: build
@@ -24,7 +26,8 @@ build:
 .PHONY: run
 run: venv build
 	PYTHONPATH=~/.virtualenvs/$(APP)/lib/python3.7/site-packages/:$$PYTHONPATH \
-	PROM_CLIENT_URL=$(PROMETHEUS) \
+	PROM_CLIENT_URL=$(PROM_CLIENT_URL) \
+	PROM_EXPORTER_ADDR=$(PROM_EXPORTER_ADDR) \
 	WATCH_LIST=$(WATCH_LIST) \
 	SCHEDULE="$(SCHEDULE)" \
 		./$(APP)
@@ -32,6 +35,10 @@ run: venv build
 .PHONY: test
 test:
 	go test -cover ./...
+
+gen:
+	mockgen -package=mocks -mock_names=Logger=Logger \
+		-destination=mocks/logger.go github.com/waltzofpearls/reckon/logs Logger
 
 .PHONY: cover
 cover:
@@ -44,7 +51,9 @@ cover:
 docker:
 	docker build -t $(IMAGE) .
 	docker run -it --rm \
-		-e "PROM_CLIENT_URL=$(PROMETHEUS)" \
+		-e "PROM_CLIENT_URL=$(PROM_CLIENT_URL)" \
+		-e "PROM_EXPORTER_ADDR=$(PROM_EXPORTER_ADDR)" \
 		-e "WATCH_LIST=$(WATCH_LIST)" \
 		-e "SCHEDULE=$(SCHEDULE)" \
+		-p $(PORT) \
 		$(IMAGE)

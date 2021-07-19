@@ -41,19 +41,27 @@ Gather the following info before start:
 
 This is the simplest method to get reckon running. You only need docker to get started.
 
-```
-PROMETHEUS={prometheus_server_address} WATCH_LIST={comma_separated_metric_names} make docker
+```shell
+PROM_CLIENT_URL={prometheus_server_address} \
+WATCH_LIST={comma_separated_metric_names} \
+make docker
 ```
 
-#### With Go and Virtualenv
+#### With Go, Python and Virtualenv
 
 If you prefer running reckon without docker, or you would like to build and run the binary locally, you will need
 Go, Python and Virtualenv. Make sure you have Go 1.16+ and Python 3.7
 
 - Go: `brew install go` or [follow this gudie](https://golang.org/doc/install)
 - Pyenv: `brew install pyenv` or [follow this guide](https://github.com/pyenv/pyenv#installation)
+- Python3.7
+  - find a Python 3.7 version with `pyenv install -l | grep '^\s*3.7'`
+  - select a version (eg. `3.7.4`) and install it with `pyenv install 3.7.4`
+  - switch to the installed version `pyenv global 3.7.4`
 - Virtualenvwrapper: `pip install virtualenvwrapper` AND [follow this guide](https://virtualenvwrapper.readthedocs.io/en/latest/install.html)
 
-```
-PROMETHEUS={prometheus_server_address} WATCH_LIST={comma_separated_metric_names} make run
+```shell
+PROM_CLIENT_URL={prometheus_server_address} \
+WATCH_LIST={comma_separated_metric_names} \
+make run
 ```
