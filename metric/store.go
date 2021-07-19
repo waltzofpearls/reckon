@@ -5,15 +5,16 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/waltzofpearls/reckon/logs"
 	"go.uber.org/zap"
 )
 
 type Store struct {
-	logger *zap.Logger
+	logger logs.Logger
 	sync.Map
 }
 
-func NewStore(lg *zap.Logger) *Store {
+func NewStore(lg logs.Logger) *Store {
 	return &Store{
 		logger: lg,
 	}
@@ -50,7 +51,7 @@ func (s *Store) ForEach(fn func(key string, delegate *Delegate)) {
 		}
 		delegate, ok := v.(*Delegate)
 		if !ok {
-			s.logger.Error("stored metric delegate is not :metric.Delegate typed",
+			s.logger.Error("stored metric delegate is not *metric.Delegate typed",
 				zap.Any("key", k), zap.String("type", reflect.TypeOf(v).String()))
 			return false
 		}
