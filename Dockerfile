@@ -1,7 +1,7 @@
-ARG PYTHON_VERSION=3.7
-ARG GO_VERSION=1.16.4
+ARG PYTHON_VERSION
+ARG GO_VERSION
 
-FROM python:${PYTHON_VERSION}-slim-stretch
+FROM python:${PYTHON_VERSION}-slim-buster
 RUN apt-get update; \
     apt-get install -y --no-install-recommends \
         g++ \

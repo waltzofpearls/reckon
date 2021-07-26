@@ -1,0 +1,20 @@
+name: goreleaser
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup release environment
+        run: |-
+          echo 'GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}' > .release-env
+      - name: Release dry run
+        run: make release-dryrun
+      - name: Release publish
+        run: make release
