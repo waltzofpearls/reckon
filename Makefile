@@ -67,11 +67,11 @@ docker:
 
 .PHONY: release
 release:
-	make release-base RELEASE_ARGS="--snapshot --rm-dist"
+	make release-base RELEASE_ARGS="release --rm-dist"
 
 .PHONY: release-dryrun
 release-dryrun:
-	make release-base RELEASE_ARGS="--snapshot --rm-dist --skip-validate --skip-publish"
+	make release-base RELEASE_ARGS="--rm-dist --skip-validate --skip-publish"
 
 .PHONY: release-base
 release-base:
