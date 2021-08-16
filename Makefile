@@ -1,5 +1,4 @@
 APP := reckon
-IMAGE := $(APP)
 PYTHON_VERSION := 3.7.11
 GO_VERSION := 1.16.5
 GORELEASER_VERSION := 0.174.0
@@ -51,19 +50,37 @@ cover:
 	tail -n +2 .coverage.tmp >> .coverage.out
 	go tool cover -html=.coverage.out
 
+IMAGE := build
+VERSION := 0.1.0
+OS := linux
+ARCH := amd64
+
 .PHONY: docker
 docker:
-	docker build -t $(IMAGE)/run \
+	docker build \
+		--progress=plain \
 		--build-arg "PYTHON_VERSION=$(PYTHON_VERSION)" \
 		--build-arg "GO_VERSION=$(GO_VERSION)" \
+		--build-arg "APP=$(APP)" \
+		--build-arg "VERSION=$(VERSION)" \
+		--build-arg "OS=$(OS)" \
+		--build-arg "ARCH=$(ARCH)" \
+		-t $(APP)/$(IMAGE) \
+		-f $(IMAGE).Dockerfile \
 		.
-	docker run -it --rm \
+	docker run --rm \
 		-e "PROM_CLIENT_URL=$(PROM_CLIENT_URL)" \
 		-e "PROM_EXPORTER_ADDR=$(PROM_EXPORTER_ADDR)" \
 		-e "WATCH_LIST=$(WATCH_LIST)" \
 		-e "SCHEDULE=$(SCHEDULE)" \
 		-p $(PORT) \
-		$(IMAGE)/run
+		$(APP)/$(IMAGE)
+
+.PHONY: debian
+debian:
+	make docker IMAGE=debian
+
+# no alpine because https://pythonspeed.com/articles/alpine-docker-python/
 
 .PHONY: release
 release:
@@ -76,31 +93,17 @@ release-dryrun:
 .PHONY: release-base
 release-base:
 	docker build \
-		-t $(IMAGE)/release \
+		--progress=plain \
 		--build-arg "PYTHON_VERSION=$(PYTHON_VERSION)" \
 		--build-arg "GO_VERSION=$(GO_VERSION)" \
 		--build-arg "GORELEASER_VERSION=$(GORELEASER_VERSION)" \
 		--build-arg "OSX_SDK_VERSION=$(OSX_SDK_VERSION)" \
+		-t $(APP)/release \
 		-f release.Dockerfile \
 		.
 	docker run --rm \
 		--env-file .release-env \
 		-v $$PWD:/go/src/$(APP) \
 		-w /go/src/$(APP) \
-		$(IMAGE)/release \
+		$(APP)/release \
 		$(RELEASE_ARGS)
-
-.PHONY: verify
-verify:
-	docker build \
-		--build-arg "PYTHON_VERSION=$(PYTHON_VERSION)" \
-		-t $(IMAGE)/verify \
-		-f verify.Dockerfile \
-		.
-	docker run --rm \
-		-e "PROM_CLIENT_URL=$(PROM_CLIENT_URL)" \
-		-e "PROM_EXPORTER_ADDR=$(PROM_EXPORTER_ADDR)" \
-		-e "WATCH_LIST=$(WATCH_LIST)" \
-		-e "SCHEDULE=$(SCHEDULE)" \
-		-p $(PORT) \
-		$(IMAGE)/verify \
