@@ -19,6 +19,8 @@ ENV PATH=$GOROOT/bin:$PATH
 WORKDIR /reckon/
 COPY ./model/requirements.txt ./model/requirements.txt
 RUN pip install --no-cache-dir -r ./model/requirements.txt
+RUN pip install pystan==2.19.1.1
+RUN pip install prophet==1.0.1
 COPY . .
 RUN make
 CMD ["./reckon"]

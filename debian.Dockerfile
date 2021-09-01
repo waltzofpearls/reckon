@@ -15,5 +15,7 @@ RUN curl -L https://github.com/waltzofpearls/${APP}/releases/download/v${VERSION
  && mv ${APP}_${VERSION}_${OS}_${ARCH} reckon \
  && cd reckon \
  && pip install --no-cache-dir -r ./model/requirements.txt
+RUN pip install pystan==2.19.1.1
+RUN pip install prophet==1.0.1
 WORKDIR /reckon
 CMD ["./reckon"]
