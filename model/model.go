@@ -34,7 +34,6 @@ const (
 	Yhat      Column = "yhat"
 	YhatUpper Column = "yhat_upper"
 	YhatLower Column = "yhat_lower"
-	Original  Column = "original"
 )
 
 type Forecast struct {

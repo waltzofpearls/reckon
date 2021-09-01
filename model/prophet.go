@@ -21,7 +21,8 @@ func NewProphet(lg *zap.Logger) Prophet {
 }
 
 func (p Prophet) Train(ctx context.Context, module *python3.PyObject, data prom.Metric, duration time.Duration) Forecasts {
-	p.logger.Info("train model with data", zap.Int("length", len(data.Values)), zap.String("duration", duration.String()))
+	logger := p.logger.With(zap.String("metric_name", data.Name), zap.Any("metric_labels", data.Labels))
+	logger.Info("train model with data", zap.Int("length", len(data.Values)), zap.String("duration", duration.String()))
 
 	runtime.LockOSThread()
 	s := python3.PyGILState_Ensure()
@@ -43,7 +44,7 @@ func (p Prophet) Train(ctx context.Context, module *python3.PyObject, data prom.
 			sampleValue.DecRef()
 			samplePair.DecRef()
 			argData.DecRef()
-			p.logger.Error("error setting sample")
+			logger.Error("error setting sample")
 			return nil
 		}
 		sampleTime = nil
@@ -56,7 +57,7 @@ func (p Prophet) Train(ctx context.Context, module *python3.PyObject, data prom.
 	if args == nil {
 		argData.DecRef()
 		argDuration.DecRef()
-		p.logger.Error("error creating args tuple")
+		logger.Error("error creating args tuple")
 		return nil
 	}
 	defer args.DecRef()
@@ -67,7 +68,7 @@ func (p Prophet) Train(ctx context.Context, module *python3.PyObject, data prom.
 		argData.DecRef()
 		argDuration.DecRef()
 		argData = nil
-		p.logger.Error("error setting args tuple argData")
+		logger.Error("error setting args tuple argData")
 		return nil
 	}
 	argData = nil
@@ -76,7 +77,7 @@ func (p Prophet) Train(ctx context.Context, module *python3.PyObject, data prom.
 			python3.PyErr_Print()
 		}
 		argDuration.DecRef()
-		p.logger.Error("error setting args tuple argDuration")
+		logger.Error("error setting args tuple argDuration")
 		return nil
 	}
 	argDuration = nil
@@ -84,25 +85,25 @@ func (p Prophet) Train(ctx context.Context, module *python3.PyObject, data prom.
 	dict := python3.PyModule_GetDict(module) // return value: borrowed
 	if !(dict != nil && python3.PyErr_Occurred() == nil) {
 		python3.PyErr_Print()
-		p.logger.Error("could not get dict for module")
+		logger.Error("could not get dict for module")
 		return nil
 	}
 	train := python3.PyDict_GetItemString(dict, "train")
 	if !(train != nil && python3.PyCallable_Check(train)) { // return value: borrowed
-		p.logger.Error("could not find function train()")
+		logger.Error("could not find function train()")
 		return nil
 	}
 	returned := train.CallObject(args)
 	if !(returned != nil && python3.PyErr_Occurred() == nil) { // return value: new reference
 		python3.PyErr_Print()
-		p.logger.Error("error calling function detect")
+		logger.Error("error calling function detect")
 		return nil
 	}
 	defer returned.DecRef()
 
 	forecasts, err := toForecastsList(returned)
 	if err != nil {
-		p.logger.Error("error converting python dict to go map", zap.Error(err))
+		logger.Error("error converting python dict to go map", zap.Error(err))
 		return nil
 	}
 
