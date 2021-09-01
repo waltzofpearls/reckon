@@ -28,7 +28,7 @@ func NewScheduler(cf *config.Config, lg *zap.Logger, cl *prom.Client, st *Store)
 func (s *Scheduler) Start(ctx context.Context, module *python3.PyObject) func() error {
 	return func() error {
 		s.store.ForEach(func(key string, delegate *Delegate) {
-			s.logger.Info("schedule initial model training")
+			s.logger.Info("schedule initial model training", zap.String("metric", key))
 			go func() {
 				delegate.Train(ctx, module)
 				s.store.Save(key, delegate)

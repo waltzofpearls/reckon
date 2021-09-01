@@ -33,11 +33,15 @@ func RegisterExporterEndpoints() {
 
 func (e *Exporter) Start(ctx context.Context) func() error {
 	return func() error {
-		e.server = &http.Server{Addr: e.config.PromExporterAddr}
+		e.server = &http.Server{
+			Addr: e.config.PromExporterAddr,
+		}
+		addrField := zap.String("addr", e.config.PromExporterAddr)
+		e.logger.Info("starting prometheus exporter server...", addrField)
 		if err := e.server.ListenAndServe(); err != http.ErrServerClosed {
 			return fmt.Errorf("prometheus exporter server stopped: %w", err)
 		}
-		e.logger.Info("prometheus exporter server stopped")
+		e.logger.Info("prometheus exporter server stopped", addrField)
 		return nil
 	}
 }
@@ -45,7 +49,8 @@ func (e *Exporter) Start(ctx context.Context) func() error {
 func (e *Exporter) Shutdown(ctx context.Context) func() error {
 	return func() error {
 		<-ctx.Done()
-		e.logger.Info("shutting down prometheus exporter server")
+		e.logger.Info("shutting down prometheus exporter server",
+			zap.String("addr", e.config.PromExporterAddr))
 
 		timeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()

@@ -79,10 +79,6 @@ func (d *Delegate) LabelValues() []string {
 
 func (d *Delegate) ValuesFrom(modelName string, nearest time.Time) map[model.Column]float64 {
 	values := make(map[model.Column]float64)
-	original := d.original.Values.Nearest(nearest)
-	if !original.IsZero() {
-		values[model.Original] = original.Value
-	}
 	if forecasts, exists := d.forecasts[modelName]; exists && len(forecasts) > 0 {
 		forecast := forecasts.Nearest(nearest.Unix())
 		if !forecast.IsZero() {
@@ -106,10 +102,11 @@ func (d *Delegate) Query() string {
 }
 
 func (d *Delegate) Train(ctx context.Context, module *python3.PyObject) {
-	logger := d.logger.With(zap.String("metric_name", d.original.Name), zap.Any("metric_labels", d.original.Labels))
+	logger := d.logger.With(zap.String("prom_url", d.config.PromClientURL),
+		zap.String("metric_name", d.original.Name), zap.Any("metric_labels", d.original.Labels))
 
 	if !d.sem.TryAcquire(1) {
-		logger.Info("skip training - metric delegate is already busy")
+		logger.Info("skip training - metric delegate is already busy", zap.String("metric", d.Key()))
 		return
 	}
 	defer d.sem.Release(1)
@@ -121,15 +118,17 @@ func (d *Delegate) Train(ctx context.Context, module *python3.PyObject) {
 	query := d.Query()
 	from := time.Now().UTC().Add(-duration)
 	to := time.Now().UTC()
+
+	fromField, toField := zap.Time("from", from), zap.Time("to", to)
+	logger.Info("query prometheus and fetch metrics data", fromField, toField)
+
 	data, err := d.client.GetMetricRangeData(ctx, query, from, to, 0)
 	if err != nil {
-		logger.Error("failed querying prometheus data range",
-			zap.String("query", query), zap.Time("from", from), zap.Time("to", to), zap.Error(err))
+		logger.Error("failed querying prometheus data range", fromField, toField, zap.Error(err))
 		return
 	}
 	if len(data) == 0 {
-		logger.Info("no data from range query",
-			zap.String("query", query), zap.Time("from", from), zap.Time("to", to), zap.Error(err))
+		logger.Info("no data from range query", fromField, toField, zap.Error(err))
 		return
 	}
 	if err := d.original.Append(data[0], d.config.RollingWindow); err != nil {
