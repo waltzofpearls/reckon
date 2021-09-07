@@ -31,8 +31,8 @@ func (w WatchList) Build(ctx context.Context) error {
 			return err
 		}
 		for _, metric := range metrics {
-			m := NewDelegate(w.logger, w.config, w.client, metric)
-			w.store.Save(m.Key(), m)
+			del := newDelegate(w.logger, w.config, w.client, metric)
+			w.store.Save(del.key, del)
 		}
 	}
 	return nil

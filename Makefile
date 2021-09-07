@@ -37,7 +37,7 @@ run: venv build
 
 .PHONY: test
 test:
-	go test -cover ./...
+	go test -cover -race ./...
 
 gen:
 	mockgen -package=mocks -mock_names=Logger=Logger \

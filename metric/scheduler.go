@@ -27,21 +27,21 @@ func NewScheduler(cf *config.Config, lg *zap.Logger, cl *prom.Client, st *Store)
 
 func (s *Scheduler) Start(ctx context.Context, module *python3.PyObject) func() error {
 	return func() error {
-		s.store.ForEach(func(key string, delegate *Delegate) {
+		s.store.ForEach(func(key string, del *delegate) {
 			s.logger.Info("schedule initial model training", zap.String("metric", key))
 			go func() {
-				delegate.Train(ctx, module)
-				s.store.Save(key, delegate)
+				del.train(ctx, module)
+				s.store.Save(key, del)
 			}()
 		})
 
 		s.cron = cron.New(cron.WithSeconds(), cron.WithLocation(s.config.Location()))
 		if _, err := s.cron.AddFunc(s.config.Schedule, func() {
 			s.logger.Info("schedule subsequent model training")
-			s.store.ForEach(func(key string, delegate *Delegate) {
+			s.store.ForEach(func(key string, del *delegate) {
 				go func() {
-					delegate.Train(ctx, module)
-					s.store.Save(key, delegate)
+					del.train(ctx, module)
+					s.store.Save(key, del)
 				}()
 			})
 		}); err != nil {
