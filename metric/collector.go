@@ -23,27 +23,43 @@ func NewCollector(cf *config.Config, lg *zap.Logger, st *Store) prometheus.Colle
 }
 
 func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
-	c.logger.Info("describe prometheus metrics")
-	c.store.ForEach(func(key string, delegate *Delegate) {
-		for _, desc := range delegate.Descs() {
+	c.logger.Info("describe reckon exporter metrics")
+	c.store.ForEach(func(key string, del *delegate) {
+		for _, desc := range del.descs {
 			ch <- desc
 		}
 	})
 }
 
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
-	c.logger.Info("collect prometheus metrics")
-	c.store.ForEach(func(key string, delegate *Delegate) {
-		for modelName, desc := range delegate.Descs() {
-			values := delegate.ValuesFrom(modelName, time.Now().In(c.config.Location()))
-			for column, value := range values {
+	c.logger.Info("scrape reckon exporter metrics")
+	c.store.ForEach(func(key string, del *delegate) {
+		for modelOrRuntimeMetric, desc := range del.descs {
+			if runtimeMetric, exists := del.runtimeRegistry[modelOrRuntimeMetric]; exists {
+				// desc is a runtime metric
+				// modelOrRuntimeMetric = {model_name}::{runtime_metric_name}
 				ch <- prometheus.MustNewConstMetric(
 					desc,
-					prometheus.GaugeValue,
-					value,
-					append(delegate.LabelValues(), string(column))...,
+					runtimeMetric.typ,
+					runtimeMetric.into(),
+					append(del.labelValues(), runtimeMetric.labels()...)...,
 				)
+			} else {
+				// desc is a forecast metric
+				modelName := modelOrRuntimeMetric
+				values := del.valuesFrom(modelName, time.Now().In(c.config.Location()))
+				for column, value := range values {
+					ch <- prometheus.MustNewConstMetric(
+						desc,
+						prometheus.GaugeValue,
+						value,
+						append(del.labelValues(), string(column))...,
+					)
+				}
 			}
 		}
+		del.runtimeRegistry.nowAll(del.modelNames, "reckon_exporter_scraped_time_seconds")
+		del.runtimeRegistry.incAll(del.modelNames, "reckon_exporter_scraped_total")
+		c.store.Save(key, del)
 	})
 }

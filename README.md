@@ -18,17 +18,24 @@ exposed from reckon:
 ```
 # HELP sensehat_humidity_prophet Prophet forecasted metric value
 # TYPE sensehat_humidity_prophet gauge
-sensehat_humidity_prophet{column="original",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 63.694435119628906
-sensehat_humidity_prophet{column="yhat",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 65.39311782093829
-sensehat_humidity_prophet{column="yhat_lower",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 64.17657873755101
-sensehat_humidity_prophet{column="yhat_upper",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 66.55323480537575
+sensehat_humidity_prophet{column="yhat",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 60.491915201576944
+sensehat_humidity_prophet{column="yhat_lower",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 59.233345022648194
+sensehat_humidity_prophet{column="yhat_upper",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 61.69595781236965
 # HELP sensehat_temperature_prophet Prophet forecasted metric value
 # TYPE sensehat_temperature_prophet gauge
-sensehat_temperature_prophet{column="original",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 28.072917938232422
-sensehat_temperature_prophet{column="yhat",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 27.972340899541923
-sensehat_temperature_prophet{column="yhat_lower",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 27.675004226891883
-sensehat_temperature_prophet{column="yhat_upper",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 28.28264431712968
+sensehat_temperature_prophet{column="yhat",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 26.479665209525724
+sensehat_temperature_prophet{column="yhat_lower",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 26.17373164147707
+sensehat_temperature_prophet{column="yhat_upper",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 26.767488257211966
 ```
+
+Each metric configured in reckon will have its forecasted metric generated and exported in 3 dimensions (labels):
+
+- `yhat`: forecasted value
+- `yhat_upper` and `yhat_lower`: [uncertainty interval](https://en.wikipedia.org/wiki/Confidence_interval)
+
+<p align="center">
+  <img alt="reckon+grafana" src="./docs/reckon+grafana.png">
+</p>
 
 ## Try it
 
@@ -65,3 +72,45 @@ PROM_CLIENT_URL={prometheus_server_address} \
 WATCH_LIST={comma_separated_metric_names} \
 make run
 ```
+
+## Configure it
+
+Reckon can be configured with the following environment variables:
+
+| Environment variable               | Required?   | Default value       | Description                                     |
+| ---------------------------------- | :---------: | ------------------- | ----------------------------------------------- |
+| `SCHEDULE`                         | Yes         | `@every 120m`       | schedule for model training                     |
+| `TIMEZONE`                         | Yes         | `America/Vancouver` | timezone for calculating schedule               |
+| `WATCH_LIST`                       | Yes         |                     | list of metrics (comma separated) to scrape     |
+| `MODELS`                           | Yes         | `Prophet`           | ML models for training and forecasting          |
+| `PROM_EXPORTER_ADDR`               | Yes         | `:8080`             | address for reckon to expose forecasted metrics |
+| `PROM_CLIENT_URL`                  | Yes         |                     | reckon will scrape metrics from this URL        |
+| `PROM_CLIENT_TLS_CA`               | No          |                     | CA cert if `PROM_CLIENT_URL` is https           |
+| `PROM_CLIENT_TLS_CERT`             | No          |                     | TLS cert if `PROM_CLIENT_URL` is https          |
+| `PROM_CLIENT_TLS_KEY`              | No          |                     | TLS key if `PROM_CLIENT_URL` is https           |
+| `PROM_CLIENT_INSECURE_SKIP_VERIFY` | No          |                     | skip TLS verification on `PROM_CLIENT_URL`      |
+| `DEFAULT_CHUNK_SIZE`               | Yes         | `120m`              | duration of original data to scrape             |
+| `ROLLING_WINDOW`                   | Yes         | `72h`               | duration of original data to keep for training  |
+
+## Monitor it
+
+In addition to forecasted metrics, reckon also expose runtime metrics to help monitor reckon itself.
+
+| Metric                                         | Type    | Description                                                      |
+| ---------------------------------------------- | ------- | ---------------------------------------------------------------- |
+| `reckon_prometheus_client_scrape_time_seconds` | Gauge   | timestamp of the last prometheus client scrape                   |
+| `reckon_exporter_scraped_time_seconds`         | Gauge   | timestamp of the last time reckon exporter scraped by prometheus |
+| `reckon_model_train_time_seconds`              | Gauge   | timestamp of the last reckon model training                      |
+| `reckon_forecast_data_received_time_seconds`   | Gauge   | timestamp of the last time receiving forecast data               |
+| `reckon_model_train_total`                     | Counter | number of times calling model train                              |
+| `reckon_model_train_duration_seconds`          | Gauge   | time taken in seconds from the last model training               |
+| `reckon_model_train_errors_total`              | Counter | number of model training errors                                  |
+| `reckon_prometheus_client_scrape_errors_total` | Counter | prometheus client scraping errors                                |
+| `reckon_exporter_scraped_total`                | Counter | number of times reckon exporter scraped by prometheus            |
+| `reckon_prometheus_client_scrape_total`        | Counter | number of prometheus client scrape                               |
+| `reckon_data_scraped_duration_minutes`         | Gauge   | duration of data scraped from prometheus                         |
+| `reckon_forecast_data_duration_minutes`        | Gauge   | duration of data being kept in memory                            |
+| `reckon_training_data_duration_minutes`        | Gauge   | duration of data sent to model for training                      |
+| `reckon_data_scraped_values`                   | Gauge   | number of the last scraped data points                           |
+| `reckon_forecast_data_values`                  | Gauge   | number of the existing data points kept in memory                |
+| `reckon_training_data_values`                  | Gauge   | number of data points recently sent to model for training        |

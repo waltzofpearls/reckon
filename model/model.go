@@ -15,7 +15,7 @@ import (
 )
 
 type Trainer interface {
-	Train(context.Context, *python3.PyObject, prom.Metric, time.Duration) Forecasts
+	Train(context.Context, *python3.PyObject, prom.Metric, time.Duration) (Forecasts, error)
 }
 
 const TypeProphet = "Prophet"
