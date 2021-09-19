@@ -26,7 +26,10 @@ builds:
       - -mod=readonly
       - -trimpath
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser
+      - |
+        -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+        -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
+        -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
   - id: linux-arm64
     goos: [linux]
     goarch: [arm64]
@@ -39,7 +42,10 @@ builds:
       - -mod=readonly
       - -trimpath
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser
+      - |
+        -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+        -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
+        -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
   - id: linux-amd64
     goos: [linux]
     goarch: [amd64]
@@ -50,7 +56,10 @@ builds:
       - -mod=readonly
       - -trimpath
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser
+      - |
+        -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+        -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
+        -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
   #- id: darwin-amd64
   #  goos:
   #    - darwin
@@ -66,7 +75,10 @@ builds:
   #    - -mod=readonly
   #    - -trimpath
   #  ldflags:
-  #    - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser
+  #    - |
+  #      -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+  #      -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
+  #      -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
 archives:
   - builds:
       - linux-armhf

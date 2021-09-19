@@ -51,7 +51,7 @@ cover:
 	go tool cover -html=.coverage.out
 
 IMAGE := build
-VERSION := 0.2.0
+VERSION := $(shell git describe --tags $(git rev-list --tags --max-count=1) | sed 's/^v//g')
 OS := linux
 ARCH := amd64
 
@@ -103,7 +103,15 @@ release-base:
 		.
 	docker run --rm \
 		--env-file .release-env \
+		-e "PYTHON_VERSION=$(PYTHON_VERSION)" \
+		-e "GO_VERSION=$(GO_VERSION)" \
+		-e "GORELEASER_VERSION=$(GORELEASER_VERSION)" \
 		-v $$PWD:/go/src/$(APP) \
 		-w /go/src/$(APP) \
 		$(APP)/release \
 		$(RELEASE_ARGS)
+
+.PHONY: test-release
+test-release:
+	make release-base RELEASE_ARGS="--snapshot --skip-publish --rm-dist"
+	make docker IMAGE=test-release VERSION=$$(ls -t dist/reckon_*_linux_amd64.tar.gz | head | sed 's|dist\/reckon_\(.*\)_linux_amd64.tar.gz|\1|')

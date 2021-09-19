@@ -11,13 +11,15 @@ import (
 type Collector struct {
 	config *config.Config
 	logger *zap.Logger
+	build  *config.BuildInfo
 	store  *Store
 }
 
-func NewCollector(cf *config.Config, lg *zap.Logger, st *Store) prometheus.Collector {
+func NewCollector(cf *config.Config, lg *zap.Logger, bi *config.BuildInfo, st *Store) prometheus.Collector {
 	return &Collector{
 		config: cf,
 		logger: lg,
+		build:  bi,
 		store:  st,
 	}
 }
@@ -29,6 +31,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 			ch <- desc
 		}
 	})
+	c.build.Describe(ch)
 }
 
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
@@ -62,4 +65,5 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		del.runtimeRegistry.incAll(del.modelNames, "reckon_exporter_scraped_total")
 		c.store.Save(key, del)
 	})
+	c.build.Collect(ch)
 }

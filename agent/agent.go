@@ -16,17 +16,17 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func Run(lg *zap.Logger) error {
+func Run(lg *zap.Logger, info *config.BuildInfo) error {
 	module, cleanup, err := model.InitPythonModule(lg)
 	if err != nil {
 		return err
 	}
 	defer cleanup()
 	prom.RegisterExporterEndpoints()
-	return reloadLoop(lg, module)
+	return reloadLoop(lg, info, module)
 }
 
-func reloadLoop(lg *zap.Logger, module *python3.PyObject) error {
+func reloadLoop(lg *zap.Logger, info *config.BuildInfo, module *python3.PyObject) error {
 	reload := make(chan bool, 1)
 	reload <- true
 	for <-reload {
@@ -47,7 +47,7 @@ func reloadLoop(lg *zap.Logger, module *python3.PyObject) error {
 			cancel()
 		}()
 
-		err := runSchedulerAndExporter(ctx, lg, module)
+		err := runSchedulerAndExporter(ctx, lg, info, module)
 		if err != nil && err != context.Canceled {
 			return err
 		}
@@ -55,7 +55,7 @@ func reloadLoop(lg *zap.Logger, module *python3.PyObject) error {
 	return nil
 }
 
-func runSchedulerAndExporter(ctx context.Context, lg *zap.Logger, module *python3.PyObject) error {
+func runSchedulerAndExporter(ctx context.Context, lg *zap.Logger, info *config.BuildInfo, module *python3.PyObject) error {
 	config := config.New(lg)
 	if err := config.Load(); err != nil {
 		return err
@@ -64,7 +64,7 @@ func runSchedulerAndExporter(ctx context.Context, lg *zap.Logger, module *python
 	store := metric.NewStore(lg)
 	watchlist := metric.NewWatchList(config, lg, client, store)
 	scheduler := metric.NewScheduler(config, lg, client, store)
-	collector := metric.NewCollector(config, lg, store)
+	collector := metric.NewCollector(config, lg, info, store)
 	exporter := prom.NewExporter(config, lg)
 
 	if err := watchlist.Build(ctx); err != nil {
