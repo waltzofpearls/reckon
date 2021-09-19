@@ -35,11 +35,11 @@ type delegate struct {
 	runtimeRegistry runtimeRegistry
 }
 
-func newDelegate(lg *zap.Logger, cf *config.Config, cl *prom.Client, data prom.Metric) *delegate {
+func newDelegate(lg *zap.Logger, cf *config.Config, cl *prom.Client, data prom.Metric, modelNames []string) *delegate {
 	labels := data.LabelNames()
 	descs := make(map[string]*prometheus.Desc)
 	models := make(map[string]model.Trainer)
-	for _, modelName := range cf.Models {
+	for _, modelName := range modelNames {
 		mod, err := model.New(lg, modelName)
 		if err != nil {
 			lg.Error("cannot create model", zap.String("model", modelName),
@@ -54,7 +54,7 @@ func newDelegate(lg *zap.Logger, cf *config.Config, cl *prom.Client, data prom.M
 		)
 		models[modelName] = mod
 	}
-	registry := newRuntimeRegistry(data.Name, cf.Models)
+	registry := newRuntimeRegistry(data.Name, modelNames)
 	for key, metric := range registry {
 		descs[key] = prometheus.NewDesc(
 			metric.metric,
@@ -78,7 +78,7 @@ func newDelegate(lg *zap.Logger, cf *config.Config, cl *prom.Client, data prom.M
 		models:    models,
 		forecasts: make(map[string]model.Forecasts),
 
-		modelNames: cf.Models,
+		modelNames: modelNames,
 		// runtime metrics from each delegate
 		// record number of model trainings, errors, durations and timestamps
 		runtimeRegistry: registry,

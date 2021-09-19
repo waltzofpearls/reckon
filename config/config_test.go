@@ -22,6 +22,7 @@ func TestConfigLoad(t *testing.T) {
 		{
 			name: "has error",
 			envToSet: map[string]string{
+				"WATCH_LIST":     "sensehat_pressure",
 				"ROLLING_WINDOW": "not a duration",
 			},
 			wantError:  errors.New("envconfig.Process: assigning ROLLING_WINDOW to RollingWindow: converting 'not a duration' to type time.Duration. details: time: invalid duration \"not a duration\""),
@@ -30,6 +31,7 @@ func TestConfigLoad(t *testing.T) {
 		{
 			name: "no error",
 			envToSet: map[string]string{
+				"WATCH_LIST":     "sensehat_pressure",
 				"ROLLING_WINDOW": "5m",
 			},
 			wantError: nil,
@@ -44,6 +46,12 @@ func TestConfigLoad(t *testing.T) {
 				DefaultChunkSize: 120 * time.Minute,
 				// an env var set for the test case
 				RollingWindow: 5 * time.Minute,
+				WatchList: &WatchList{
+					logger: zap.NewNop(),
+					list: map[string][]string{
+						"sensehat_pressure": {"Prophet"},
+					},
+				},
 			},
 		},
 	}
