@@ -6,7 +6,10 @@ OSX_SDK_VERSION := 10.12
 PORT := 8080:8080
 PROM_CLIENT_URL ?= http://prometheus.rpi.topbass.studio:9090
 PROM_EXPORTER_ADDR ?= :8080
-WATCH_LIST ?= sensehat_temperature,sensehat_humidity
+# comma separated list or inline yaml
+# WATCH_LIST ?= sensehat_temperature,sensehat_humidity
+# WATCH_LIST ?= {sensehat_temperature: [Prophet], sensehat_humidity: [Prophet]}
+WATCH_LIST ?= {sensehat_temperature: [Prophet], sensehat_humidity: [Prophet]}
 SCHEDULE ?= @every 10m
 
 .PHONY: all
@@ -31,7 +34,7 @@ run: venv build
 	PYTHONPATH=~/.virtualenvs/$(APP)/lib/python3.7/site-packages/:$$PYTHONPATH \
 	PROM_CLIENT_URL=$(PROM_CLIENT_URL) \
 	PROM_EXPORTER_ADDR=$(PROM_EXPORTER_ADDR) \
-	WATCH_LIST=$(WATCH_LIST) \
+	WATCH_LIST="$(WATCH_LIST)" \
 	SCHEDULE="$(SCHEDULE)" \
 		./$(APP)
 

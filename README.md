@@ -42,7 +42,9 @@ Each metric configured in reckon will have its forecasted metric generated and e
 Gather the following info before start:
 
 - Prometheus server address, for example, `http://prometheus.rpi.topbass.studio:9090`
-- Metric names to watch and join them together with comma, for example, `sensehat_temperature,sensehat_humidity`
+- Metric names to watch and models for each metric, accepts inline YAML or comma separated list,
+  for example, `{sensehat_temperature: [Prophet], sensehat_humidity: [Prophet]}` or
+  `sensehat_temperature,sensehat_humidity`
 
 #### With Docker
 
@@ -50,7 +52,7 @@ This is the simplest method to get reckon running. You only need docker to get s
 
 ```shell
 PROM_CLIENT_URL={prometheus_server_address} \
-WATCH_LIST={comma_separated_metric_names} \
+WATCH_LIST={inline_yaml_or_comma_separated_list} \
 make docker
 ```
 
@@ -69,7 +71,7 @@ Go, Python and Virtualenv. Make sure you have Go 1.16+ and Python 3.7
 
 ```shell
 PROM_CLIENT_URL={prometheus_server_address} \
-WATCH_LIST={comma_separated_metric_names} \
+WATCH_LIST={inline_yaml_or_comma_separated_list} \
 make run
 ```
 
@@ -77,20 +79,20 @@ make run
 
 Reckon can be configured with the following environment variables:
 
-| Environment variable               | Required?   | Default value       | Description                                     |
-| ---------------------------------- | :---------: | ------------------- | ----------------------------------------------- |
-| `SCHEDULE`                         | Yes         | `@every 120m`       | schedule for model training                     |
-| `TIMEZONE`                         | Yes         | `America/Vancouver` | timezone for calculating schedule               |
-| `WATCH_LIST`                       | Yes         |                     | list of metrics (comma separated) to scrape     |
-| `MODELS`                           | Yes         | `Prophet`           | ML models for training and forecasting          |
-| `PROM_EXPORTER_ADDR`               | Yes         | `:8080`             | address for reckon to expose forecasted metrics |
-| `PROM_CLIENT_URL`                  | Yes         |                     | reckon will scrape metrics from this URL        |
-| `PROM_CLIENT_TLS_CA`               | No          |                     | CA cert if `PROM_CLIENT_URL` is https           |
-| `PROM_CLIENT_TLS_CERT`             | No          |                     | TLS cert if `PROM_CLIENT_URL` is https          |
-| `PROM_CLIENT_TLS_KEY`              | No          |                     | TLS key if `PROM_CLIENT_URL` is https           |
-| `PROM_CLIENT_INSECURE_SKIP_VERIFY` | No          |                     | skip TLS verification on `PROM_CLIENT_URL`      |
-| `DEFAULT_CHUNK_SIZE`               | Yes         | `120m`              | duration of original data to scrape             |
-| `ROLLING_WINDOW`                   | Yes         | `72h`               | duration of original data to keep for training  |
+| Environment variable               | Required?   | Default value       | Description                                                                                             |
+| ---------------------------------- | :---------: | ------------------- | ------------------------------------------------------------------------------------------------------- |
+| `SCHEDULE`                         | Yes         | `@every 120m`       | schedule for model training                                                                             |
+| `TIMEZONE`                         | Yes         | `America/Vancouver` | timezone for calculating schedule                                                                       |
+| `WATCH_LIST`                       | Yes         |                     | metrics to scrape, YAML (model names specified on each metric) or comma separated list (needs `MODELS`) |
+| `MODELS`                           | Yes         | `Prophet`           | ML models for training and forecasting, required if `WATCH_LIST` is a comma separated list              |
+| `PROM_EXPORTER_ADDR`               | Yes         | `:8080`             | address for reckon to expose forecasted metrics                                                         |
+| `PROM_CLIENT_URL`                  | Yes         |                     | reckon will scrape metrics from this URL                                                                |
+| `PROM_CLIENT_TLS_CA`               | No          |                     | CA cert if `PROM_CLIENT_URL` is https                                                                   |
+| `PROM_CLIENT_TLS_CERT`             | No          |                     | TLS cert if `PROM_CLIENT_URL` is https                                                                  |
+| `PROM_CLIENT_TLS_KEY`              | No          |                     | TLS key if `PROM_CLIENT_URL` is https                                                                   |
+| `PROM_CLIENT_INSECURE_SKIP_VERIFY` | No          |                     | skip TLS verification on `PROM_CLIENT_URL`                                                              |
+| `DEFAULT_CHUNK_SIZE`               | Yes         | `120m`              | duration of original data to scrape                                                                     |
+| `ROLLING_WINDOW`                   | Yes         | `72h`               | duration of original data to keep for training                                                          |
 
 ## Monitor it
 

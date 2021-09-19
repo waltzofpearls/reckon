@@ -25,13 +25,13 @@ func NewWatchList(cf *config.Config, lg *zap.Logger, cl *prom.Client, st *Store)
 }
 
 func (w WatchList) Build(ctx context.Context) error {
-	for _, query := range w.config.WatchList {
-		metrics, err := w.client.GetCurrentMetricValue(ctx, query)
+	for metricQuery, modelNames := range w.config.WatchList.List() {
+		metrics, err := w.client.GetCurrentMetricValue(ctx, metricQuery)
 		if err != nil {
 			return err
 		}
 		for _, metric := range metrics {
-			del := newDelegate(w.logger, w.config, w.client, metric)
+			del := newDelegate(w.logger, w.config, w.client, metric, modelNames)
 			w.store.Save(del.key, del)
 		}
 	}

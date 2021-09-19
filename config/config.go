@@ -24,8 +24,8 @@ type Config struct {
 	PromClientTLSKey             string `envconfig:"PROM_CLIENT_TLS_KEY"`
 	PromClientInsecureSkipVerify bool   `envconfig:"PROM_CLIENT_INSECURE_SKIP_VERIFY"`
 
-	WatchList []string `envconfig:"WATCH_LIST"`
-	Models    []string `envconfig:"MODELS" default:"Prophet"`
+	WatchList *WatchList `envconfig:"WATCH_LIST"`
+	Models    []string   `envconfig:"MODELS" default:"Prophet"`
 
 	DefaultChunkSize time.Duration `envconfig:"DEFAULT_CHUNK_SIZE" default:"120m"`
 	RollingWindow    time.Duration `envconfig:"ROLLING_WINDOW" default:"72h"`
@@ -42,7 +42,12 @@ func New(lg *zap.Logger) *Config {
 }
 
 func (c *Config) Load() error {
-	return envconfig.Process("", c)
+	c.WatchList = newWatchList(c.logger)
+	if err := envconfig.Process("", c); err != nil {
+		return err
+	}
+	c.WatchList.fillEmpty(c.Models)
+	return nil
 }
 
 func (c *Config) Location() *time.Location {
