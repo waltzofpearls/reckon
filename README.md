@@ -94,7 +94,7 @@ Reckon can be configured with the following environment variables:
 
 ## Monitor it
 
-In addition to forecasted metrics, reckon also expose runtime metrics to help monitor reckon itself.
+In addition to forecasted metrics, reckon also exposes runtime metrics to help monitor reckon itself.
 
 | Metric                                         | Type    | Description                                                      |
 | ---------------------------------------------- | ------- | ---------------------------------------------------------------- |
