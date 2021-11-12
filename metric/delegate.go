@@ -175,11 +175,12 @@ func (d *delegate) train(ctx context.Context, module *python3.PyObject) {
 			}()
 			d.forecasts[modelName], err = mod.Train(ctx, module, d.original, duration)
 			if err != nil {
-				logger.Error("unable to train model", zap.Error(err))
+				logger.Error("unable to train model", zap.String("model_name", modelName), zap.Error(err))
 				d.runtimeRegistry.inc(modelName, "reckon_model_train_errors_total")
 				return
 			}
-			logger.Info("received forecasted data", zap.Int("length", len(d.forecasts[modelName])))
+			logger.Info("received forecasted data",
+				zap.String("model_name", modelName), zap.Int("length", len(d.forecasts[modelName])))
 			d.runtimeRegistry.set(modelName, "reckon_forecast_data_duration_minutes", duration.Minutes())
 			d.runtimeRegistry.set(modelName, "reckon_forecast_data_values", float64(len(d.forecasts[modelName])))
 		}(modelName, mod)

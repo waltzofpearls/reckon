@@ -116,3 +116,11 @@ In addition to forecasted metrics, reckon also exposes runtime metrics to help m
 | `reckon_data_scraped_values`                   | Gauge   | number of the last scraped data points                           |
 | `reckon_forecast_data_values`                  | Gauge   | number of the existing data points kept in memory                |
 | `reckon_training_data_values`                  | Gauge   | number of data points recently sent to model for training        |
+
+Reckon exposes build info through `reckon_build_info`
+
+```
+# HELP reckon_build_info Information about reckon build.
+# TYPE reckon_build_info gauge
+reckon_build_info{commit="bc9fce78f9cb9cf2298b04b49f630190d7121df2",date="2021-09-19T21:10:27Z",go_version="1.16.5",goreleaser_version="0.174.0",python_version="3.7.11",version="0.4.0"} 1
+```

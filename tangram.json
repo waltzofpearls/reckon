@@ -1,0 +1,21 @@
+{
+    "train": {
+        "grid": [
+            {
+                "model": "tree",
+                "l2_regularization_for_continuous_splits": 0.1,
+                "l2_regularization_for_discrete_splits": 10,
+                "learning_rate": 0.1,
+                "max_depth": 50,
+                "max_examples_for_computing_bin_thresholds": 200000,
+                "max_leaf_nodes": 512,
+                "max_rounds": 1000,
+                "max_valid_bins_for_number_features": 255,
+                "min_examples_per_node": 20,
+                "min_gain_to_split": 0,
+                "min_sum_hessians_per_node": 0.001,
+                "smoothing_factor_for_discrete_bin_sorting": 10
+            }
+        ]
+    }
+}

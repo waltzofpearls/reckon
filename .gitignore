@@ -106,3 +106,6 @@ venv.bak/
 *.swp
 reckon
 .release-env
+model.tangram
+train.csv
+test.csv

@@ -9,7 +9,7 @@ PROM_EXPORTER_ADDR ?= :8080
 # comma separated list or inline yaml
 # WATCH_LIST ?= sensehat_temperature,sensehat_humidity
 # WATCH_LIST ?= {sensehat_temperature: [Prophet], sensehat_humidity: [Prophet]}
-WATCH_LIST ?= {sensehat_temperature: [Prophet], sensehat_humidity: [Prophet]}
+WATCH_LIST ?= {sensehat_temperature: [Prophet, Tangram], sensehat_humidity: [Prophet]}
 SCHEDULE ?= @every 10m
 
 .PHONY: all
