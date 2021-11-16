@@ -5,6 +5,8 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"sync"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -30,7 +32,9 @@ type Config struct {
 	DefaultChunkSize time.Duration `envconfig:"DEFAULT_CHUNK_SIZE" default:"120m"`
 	RollingWindow    time.Duration `envconfig:"ROLLING_WINDOW" default:"72h"`
 
-	logger    *zap.Logger
+	logger *zap.Logger
+
+	sync.Mutex
 	location  *time.Location
 	chunkSize time.Duration
 }
@@ -51,6 +55,9 @@ func (c *Config) Load() error {
 }
 
 func (c *Config) Location() *time.Location {
+	log.Println("Config::Location before lock")
+	//gc.Mutex.Lock()
+	log.Println("Config::Location after lock")
 	if c.location == nil {
 		var err error
 		if c.location, err = time.LoadLocation(c.Timezone); err != nil {
@@ -58,10 +65,17 @@ func (c *Config) Location() *time.Location {
 			c.location = time.Local
 		}
 	}
+	log.Println("Config::Location before unlock")
+	// c.Mutex.Unlock()
+	log.Println("Config::Location after unlock")
 	return c.location
 }
 
 func (c *Config) ChunkSize() time.Duration {
+	log.Println("Config::ChunkSize before lock")
+	// c.Mutex.Lock()
+	log.Println("Config::ChunkSize after lock")
+
 	if c.chunkSize == 0 {
 		now := time.Now().In(c.Location())
 		parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
@@ -72,6 +86,10 @@ func (c *Config) ChunkSize() time.Duration {
 			c.chunkSize = RoundUpDuration(schedule.Next(now).Sub(now), time.Minute)
 		}
 	}
+
+	log.Println("Config::ChunkSize before unlock")
+	// c.Mutex.Unlock()
+	log.Println("Config::ChunkSize after unlock")
 	return c.chunkSize
 }
 

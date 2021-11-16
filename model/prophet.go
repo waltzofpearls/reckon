@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/DataDog/go-python3"
+	python3 "github.com/go-python/cpy3"
 	"github.com/waltzofpearls/reckon/prom"
 	"go.uber.org/zap"
 )

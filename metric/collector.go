@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"log"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -50,6 +51,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			} else {
 				// desc is a forecast metric
 				modelName := modelOrRuntimeMetric
+				log.Println("Collector::Collect", modelName)
 				values := del.valuesFrom(modelName, time.Now().In(c.config.Location()))
 				for column, value := range values {
 					ch <- prometheus.MustNewConstMetric(

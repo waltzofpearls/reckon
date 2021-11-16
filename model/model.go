@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/DataDog/go-python3"
+	python3 "github.com/go-python/cpy3"
 	"github.com/rocketlaunchr/dataframe-go"
 	"github.com/rocketlaunchr/dataframe-go/exports"
 	"github.com/waltzofpearls/reckon/prom"

@@ -3,11 +3,12 @@ package metric
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/DataDog/go-python3"
+	python3 "github.com/go-python/cpy3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/waltzofpearls/reckon/config"
 	"github.com/waltzofpearls/reckon/model"
@@ -123,6 +124,7 @@ func (d *delegate) train(ctx context.Context, module *python3.PyObject) {
 	}
 	defer d.sem.Release(1)
 
+	log.Println("delegate::train", d.original.Name)
 	duration := d.config.ChunkSize()
 	if len(d.forecasts) == 0 { // initial run
 		duration = d.config.RollingWindow

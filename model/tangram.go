@@ -1,17 +1,21 @@
 package model
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
-	"github.com/DataDog/go-python3"
+	python3 "github.com/go-python/cpy3"
 	"github.com/rocketlaunchr/dataframe-go"
-	"github.com/tangramdotdev/tangram-go"
+	"github.com/rocketlaunchr/dataframe-go/exports"
+	"github.com/rocketlaunchr/dataframe-go/imports"
 	"github.com/waltzofpearls/reckon/prom"
 	"go.uber.org/zap"
 	"gonum.org/v1/gonum/stat"
@@ -103,18 +107,13 @@ func (t Tangram) Train(ctx context.Context, module *python3.PyObject, data prom.
 		return nil, err
 	}
 
-	// testingRow := testX.Row(testX.NRows()-1, true, dataframe.SeriesName)
-	testingRow := nanDropped.Row(nanDropped.NRows()-1, true, dataframe.SeriesName)
-	predictInput := make(tangram.PredictInput)
-	for _, name := range columnNames {
-		predictInput[name] = testingRow[name]
+	copyFrom := nanDropped.NRows() - 1
+	predictInput := nanDropped.Copy(dataframe.Range{
+		Start: &copyFrom,
+	})
+	if err := predictInput.RemoveSeries("samples(t)"); err != nil {
+		fmt.Println(err)
 	}
-
-	model, err := tangram.LoadModelFromPath(tangramPath, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer model.Destroy()
 
 	iteration = len(data.Values)
 
@@ -125,13 +124,32 @@ func (t Tangram) Train(ctx context.Context, module *python3.PyObject, data prom.
 	timestamp := prevTime.Unix()
 	gapInBetween := int64(granularity.Seconds())
 	for i := 0; i < iteration; i++ {
-		output := model.PredictOne(predictInput, nil)
-		pred, ok := output.(tangram.RegressionPredictOutput)
-		if !ok {
-			return nil, fmt.Errorf("predict output %T is not a RegressionPredictOutput", output)
+		subProcess := exec.Command(cmdName, "predict", "--model", tangramPath)
+		stdin, err := subProcess.StdinPipe()
+		if err != nil {
+			fmt.Println(err)
 		}
+		go func() {
+			defer stdin.Close()
+			if err := exports.ExportToCSV(ctx, stdin, predictInput); err != nil {
+				fmt.Println(err)
+			}
+		}()
+		out, err := subProcess.CombinedOutput()
+		if err != nil {
+			fmt.Println(err)
+		}
+		loaded, err := imports.LoadFromCSV(ctx, bytes.NewReader(out))
+		if err != nil {
+			fmt.Println(err)
+		}
+		predictedRow := loaded.Row(0, true, dataframe.SeriesName)
 
-		current := float64(pred.Value)
+		predictedX := predictedRow["samples(t)"].(string)
+		current, err := strconv.ParseFloat(predictedX, 64)
+		if err != nil {
+			fmt.Println(err)
+		}
 		length := len(predicted)
 		if length > 2 {
 			secondLast := predicted[length-2]
@@ -145,10 +163,12 @@ func (t Tangram) Train(ctx context.Context, module *python3.PyObject, data prom.
 			}
 		}
 
+		nextInput := predictInput.Row(0, true, dataframe.SeriesName)
 		for j := numX; j > 1; j-- {
-			predictInput[fmt.Sprintf("samples(t-%d)", j)] = predictInput[fmt.Sprintf("samples(t-%d)", j-1)]
+			nextInput[fmt.Sprintf("samples(t-%d)", j)] = nextInput[fmt.Sprintf("samples(t-%d)", j-1)]
 		}
-		predictInput["samples(t-1)"] = current
+		nextInput["samples(t-1)"] = current
+		predictInput.UpdateRow(0, nil, nextInput)
 		predicted = append(predicted, current)
 
 		timestamp += int64(i+1) * gapInBetween
@@ -161,7 +181,69 @@ func (t Tangram) Train(ctx context.Context, module *python3.PyObject, data prom.
 				YhatLower: current - stdDevX2,
 			},
 		})
+		// log.Println(i+1, iteration, time.Since(start))
 	}
+
+	// // testingRow := testX.Row(testX.NRows()-1, true, dataframe.SeriesName)
+	// testingRow := nanDropped.Row(nanDropped.NRows()-1, true, dataframe.SeriesName)
+	// predictInput := make(tangram.PredictInput)
+	// for _, name := range columnNames {
+	// 	predictInput[name] = testingRow[name]
+	// }
+
+	// model, err := tangram.LoadModelFromPath(tangramPath, nil)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer model.Destroy()
+
+	// iteration = len(data.Values)
+
+	// var (
+	// 	predicted []float64
+	// 	forecasts Forecasts
+	// )
+	// timestamp := prevTime.Unix()
+	// gapInBetween := int64(granularity.Seconds())
+	// for i := 0; i < iteration; i++ {
+	// 	output := model.PredictOne(predictInput, nil)
+	// 	pred, ok := output.(tangram.RegressionPredictOutput)
+	// 	if !ok {
+	// 		return nil, fmt.Errorf("predict output %T is not a RegressionPredictOutput", output)
+	// 	}
+
+	// 	current := float64(pred.Value)
+	// 	length := len(predicted)
+	// 	if length > 2 {
+	// 		secondLast := predicted[length-2]
+	// 		thirdLast := predicted[length-3]
+	// 		if secondLast == current {
+	// 			if secondLast > thirdLast {
+	// 				current += 0.000001
+	// 			} else {
+	// 				current -= 0.000001
+	// 			}
+	// 		}
+	// 	}
+
+	// 	for j := numX; j > 1; j-- {
+	// 		predictInput[fmt.Sprintf("samples(t-%d)", j)] = predictInput[fmt.Sprintf("samples(t-%d)", j-1)]
+	// 	}
+	// 	predictInput["samples(t-1)"] = current
+	// 	predicted = append(predicted, current)
+
+	// 	timestamp += int64(i+1) * gapInBetween
+	// 	stdDevX2 := stat.StdDev(predicted[:i], nil) * 2
+	// 	forecasts = append(forecasts, Forecast{
+	// 		Timestamp: timestamp,
+	// 		Values: map[Column]float64{
+	// 			Yhat:      current,
+	// 			YhatUpper: current + stdDevX2,
+	// 			YhatLower: current - stdDevX2,
+	// 		},
+	// 	})
+	// }
+	log.Println(predicted)
 
 	t.logger.Info("training completed",
 		zap.Stringer("duration", time.Since(start)), zap.Int("predictions", len(predicted)))

@@ -8,8 +8,13 @@ RUN apt-get update; \
         curl \
         make \
         pkg-config \
+        gnupg \
         ; \
     rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL https://pkgs.tangram.dev/stable/debian/buster.gpg | apt-key add - \
+ && curl -fsSL https://pkgs.tangram.dev/stable/debian/buster.list | tee /etc/apt/sources.list.d/tangram.list \
+ && apt-get update \
+ && apt-get install tangram
 ARG GO_VERSION
 RUN curl -O https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz \
  && tar xvf go${GO_VERSION}.linux-amd64.tar.gz \

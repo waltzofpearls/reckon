@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/DataDog/go-python3"
+	python3 "github.com/go-python/cpy3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/waltzofpearls/reckon/config"
 	"github.com/waltzofpearls/reckon/metric"
