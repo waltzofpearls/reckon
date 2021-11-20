@@ -17,11 +17,6 @@ builds:
     goos: [linux]
     goarch: [arm]
     goarm: [7]
-    env:
-      - CGO_ENABLED=1
-      - CC=arm-linux-gnueabihf-gcc
-      - CXX=arm-linux-gnueabihf-g++
-      - PKG_CONFIG_PATH=/usr/local/python_armhf/lib/pkgconfig
     flags:
       - -mod=readonly
       - -trimpath
@@ -33,11 +28,6 @@ builds:
   - id: linux-arm64
     goos: [linux]
     goarch: [arm64]
-    env:
-      - CGO_ENABLED=1
-      - CC=aarch64-linux-gnu-gcc
-      - CXX=aarch64-linux-gnu-g++
-      - PKG_CONFIG_PATH=/usr/local/python_arm64/lib/pkgconfig
     flags:
       - -mod=readonly
       - -trimpath
@@ -49,9 +39,6 @@ builds:
   - id: linux-amd64
     goos: [linux]
     goarch: [amd64]
-    env:
-      - CGO_ENABLED=1
-      - PKG_CONFIG_PATH=/usr/local/python_amd64/lib/pkgconfig
     flags:
       - -mod=readonly
       - -trimpath
@@ -60,40 +47,30 @@ builds:
         -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
         -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
         -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
-  #- id: darwin-amd64
-  #  goos:
-  #    - darwin
-  #  goarch:
-  #    - amd64
-  #  env:
-  #    - CGO_ENABLED=1
-  #    - CC=o64-clang
-  #    - CXX=o64-clang++
-  #    - C_INCLUDE_PATH=/usr/local
-  #    - PKG_CONFIG_PATH=/usr/local/python_amd64/lib/pkgconfig
-  #  flags:
-  #    - -mod=readonly
-  #    - -trimpath
-  #  ldflags:
-  #    - |
-  #      -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
-  #      -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
-  #      -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
+  - id: darwin-amd64
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    flags:
+      - -mod=readonly
+      - -trimpath
+    ldflags:
+      - |
+        -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+        -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
+        -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
 archives:
   - builds:
       - linux-armhf
       - linux-arm64
       - linux-amd64
-      #- darwin-amd64
+      - darwin-amd64
     wrap_in_directory: true
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - src: LICENSE
-        strip_parent: true
       - src: README.md
-        strip_parent: true
-      - src: model/prophet_model/*.py
-        dst: model/prophet_model
-        strip_parent: true
+      - src: model/**/*.py
       - src: model/requirements.txt
-        strip_parent: true
+      - src: model/README.md

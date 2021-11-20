@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
+	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/credentials"
 )
 
 type Config struct {
@@ -29,6 +31,13 @@ type Config struct {
 
 	DefaultChunkSize time.Duration `envconfig:"DEFAULT_CHUNK_SIZE" default:"120m"`
 	RollingWindow    time.Duration `envconfig:"ROLLING_WINDOW" default:"72h"`
+
+	GRPCServerAddress string `envconfig:"GRPC_SERVER_ADDRESS" default:"localhost:18443"`
+	GRPCRootCA        string `envconfig:"GRPC_ROOT_CA"`
+	GRPCServerCert    string `envconfig:"GRPC_SERVER_CERT"`
+	GRPCServerKey     string `envconfig:"GRPC_SERVER_KEY"`
+	GRPCClientCert    string `envconfig:"GRPC_CLIENT_CERT"`
+	GRPCClientKey     string `envconfig:"GRPC_CLIENT_KEY"`
 
 	logger    *zap.Logger
 	location  *time.Location
@@ -145,4 +154,20 @@ func loadCertificate(config *tls.Config, certFile, keyFile string) error {
 	config.Certificates = []tls.Certificate{cert}
 	config.BuildNameToCertificate()
 	return nil
+}
+
+func (c *Config) GRPCClientCreds() (credentials.TransportCredentials, error) {
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM([]byte(c.GRPCRootCA)) {
+		return nil, errors.New("failed to append root CA cert")
+	}
+	certificate, err := tls.X509KeyPair([]byte(c.GRPCClientCert), []byte(c.GRPCClientKey))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed load client TLS key and cert")
+	}
+	return credentials.NewTLS(&tls.Config{
+		ServerName:   "localhost",
+		Certificates: []tls.Certificate{certificate},
+		RootCAs:      certPool,
+	}), nil
 }

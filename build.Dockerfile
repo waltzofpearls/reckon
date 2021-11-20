@@ -5,6 +5,7 @@ FROM python:${PYTHON_VERSION}-slim-buster
 RUN apt-get update; \
     apt-get install -y --no-install-recommends \
         g++ \
+        git \
         curl \
         make \
         pkg-config \

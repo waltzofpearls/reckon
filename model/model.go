@@ -2,28 +2,27 @@ package model
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math"
 	"os"
-	"path/filepath"
+	"os/exec"
 	"time"
 
-	"github.com/DataDog/go-python3"
+	"github.com/waltzofpearls/reckon/config"
 	"github.com/waltzofpearls/reckon/prom"
 	"go.uber.org/zap"
 )
 
 type Trainer interface {
-	Train(context.Context, *python3.PyObject, prom.Metric, time.Duration) (Forecasts, error)
+	Train(context.Context, prom.Metric, time.Duration) (Forecasts, error)
 }
 
 const TypeProphet = "Prophet"
 
-func New(lg *zap.Logger, name string) (Trainer, error) {
+func New(cf *config.Config, lg *zap.Logger, name string) (Trainer, error) {
 	switch name {
 	case TypeProphet:
-		return NewProphet(lg), nil
+		return NewProphet(cf, lg), nil
 	}
 	return nil, fmt.Errorf("%s is not a valid model type", name)
 }
@@ -60,44 +59,40 @@ func (f Forecasts) Nearest(timestamp int64) Forecast {
 	return current
 }
 
-func InitPythonModule(lg *zap.Logger) (module *python3.PyObject, cleanup func(), err error) {
-	python3.Py_Initialize()
-	if !python3.Py_IsInitialized() {
-		lg.Error("error initializing python interpreter")
-		return nil, nil, errors.New("error initializing python interpreter")
+type Server struct {
+	logger *zap.Logger
+	signal chan os.Signal
+}
+
+func NewServer(lg *zap.Logger, sig chan os.Signal) Server {
+	return Server{
+		logger: lg,
+		signal: sig,
 	}
+}
 
-	path, err := filepath.Abs(filepath.Dir(os.Args[0]) + "/model")
-	if err != nil {
-		lg.Error("error finding absolute /path/to/reckon/model", zap.Error(err))
-		return nil, nil, fmt.Errorf("error finding absolute /path/to/reckon/model: %w", err)
+func (s Server) Start(ctx context.Context) func() error {
+	return func() error {
+		s.logger.Info("starting python gRPC server...")
+		cancelCtx, cancelFn := context.WithCancel(context.Background())
+		subProc := exec.CommandContext(cancelCtx, "python", "model/server/main.py")
+		subProc.Stdout = os.Stdout
+		subProc.Stderr = os.Stderr
+		go func() {
+			<-ctx.Done()
+			s.logger.Info("stopping python gRPC server...")
+			subProc.Process.Signal(<-s.signal)
+			time.AfterFunc(5*time.Second, cancelFn)
+		}()
+		if err := subProc.Run(); err != nil {
+			switch err.(type) {
+			case *exec.ExitError:
+				s.logger.Info("stopped python gRPC server")
+			default:
+				s.logger.Error("failed to run python gRPC server", zap.Error(err))
+				return err
+			}
+		}
+		return nil
 	}
-
-	returned := python3.PyRun_SimpleString("import sys\nsys.path.append(\"" + path + "\")")
-	if returned != 0 {
-		lg.Error("error appending to python sys.path", zap.String("path", path))
-		return nil, nil, fmt.Errorf("error appending to python sys.path: %s", path)
-	}
-
-	imported := python3.PyImport_ImportModule("prophet_model") // return value: new ref
-	if !(imported != nil && python3.PyErr_Occurred() == nil) {
-		python3.PyErr_Print()
-		lg.Error("failed to import module prophet_model")
-		return nil, nil, errors.New("failed to import module prophet_model")
-	}
-
-	module = python3.PyImport_AddModule("prophet_model") // return value: borrowed ref (from imported)
-	if !(module != nil && python3.PyErr_Occurred() == nil) {
-		python3.PyErr_Print()
-		lg.Error("failed to add module prophet_model")
-		return nil, nil, errors.New("failed to add module prophet_model")
-	}
-
-	state := python3.PyEval_SaveThread()
-
-	return module, func() {
-		imported.DecRef()
-		python3.PyEval_RestoreThread(state)
-		python3.Py_Finalize()
-	}, nil
 }

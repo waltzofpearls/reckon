@@ -3,7 +3,6 @@ package metric
 import (
 	"context"
 
-	"github.com/DataDog/go-python3"
 	"github.com/robfig/cron/v3"
 	"github.com/waltzofpearls/reckon/config"
 	"github.com/waltzofpearls/reckon/prom"
@@ -25,13 +24,13 @@ func NewScheduler(cf *config.Config, lg *zap.Logger, cl *prom.Client, st *Store)
 	}
 }
 
-func (s *Scheduler) Start(ctx context.Context, module *python3.PyObject) func() error {
+func (s *Scheduler) Start(ctx context.Context) func() error {
 	return func() error {
 		s.store.ForEach(func(key string, del *delegate) {
 			s.logger.Info("schedule initial model training",
 				zap.String("metric", key), zap.Strings("models", del.modelNames))
 			go func() {
-				del.train(ctx, module)
+				del.train(ctx)
 				s.store.Save(key, del)
 			}()
 		})
@@ -42,7 +41,7 @@ func (s *Scheduler) Start(ctx context.Context, module *python3.PyObject) func() 
 				s.logger.Info("schedule subsequent model training",
 					zap.String("metric", key), zap.Strings("models", del.modelNames))
 				go func() {
-					del.train(ctx, module)
+					del.train(ctx)
 					s.store.Save(key, del)
 				}()
 			})
