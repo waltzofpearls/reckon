@@ -1,8 +1,7 @@
 APP := reckon
-PYTHON_VERSION := 3.7.11
-GO_VERSION := 1.16.5
+PYTHON_VERSION := 3.7.12
+GO_VERSION := 1.16.10
 GORELEASER_VERSION := 0.174.0
-OSX_SDK_VERSION := 10.12
 PORT := 8080:8080
 PROM_CLIENT_URL ?= http://prometheus.rpi.topbass.studio:9090
 PROM_EXPORTER_ADDR ?= :8080
@@ -143,7 +142,6 @@ release-base:
 		--build-arg "PYTHON_VERSION=$(PYTHON_VERSION)" \
 		--build-arg "GO_VERSION=$(GO_VERSION)" \
 		--build-arg "GORELEASER_VERSION=$(GORELEASER_VERSION)" \
-		--build-arg "OSX_SDK_VERSION=$(OSX_SDK_VERSION)" \
 		-t $(APP)/release \
 		-f release.Dockerfile \
 		.

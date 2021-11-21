@@ -65,8 +65,8 @@ Go, Python and Virtualenv. Make sure you have Go 1.16+ and Python 3.7
 - Pyenv: `brew install pyenv` or [follow this guide](https://github.com/pyenv/pyenv#installation)
 - Python3.7
   - find a Python 3.7 version with `pyenv install -l | grep '^\s*3.7'`
-  - select a version (eg. `3.7.4`) and install it with `pyenv install 3.7.4`
-  - switch to the installed version `pyenv global 3.7.4`
+  - select a version (eg. `3.7.12`) and install it with `pyenv install 3.7.12`
+  - switch to the installed version `pyenv global 3.7.12`
 - Virtualenvwrapper: `pip install virtualenvwrapper` AND [follow this guide](https://virtualenvwrapper.readthedocs.io/en/latest/install.html)
 
 ```shell
