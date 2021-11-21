@@ -25,33 +25,9 @@ builds:
         -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
         -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
         -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
-  - id: linux-arm64
-    goos: [linux]
-    goarch: [arm64]
-    flags:
-      - -mod=readonly
-      - -trimpath
-    ldflags:
-      - |
-        -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
-        -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
-        -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
-  - id: linux-amd64
-    goos: [linux]
-    goarch: [amd64]
-    flags:
-      - -mod=readonly
-      - -trimpath
-    ldflags:
-      - |
-        -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
-        -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
-        -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
-  - id: darwin-amd64
-    goos:
-      - darwin
-    goarch:
-      - amd64
+  - id: everything-else
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
     flags:
       - -mod=readonly
       - -trimpath
@@ -63,9 +39,7 @@ builds:
 archives:
   - builds:
       - linux-armhf
-      - linux-arm64
-      - linux-amd64
-      - darwin-amd64
+      - everything-else
     wrap_in_directory: true
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
