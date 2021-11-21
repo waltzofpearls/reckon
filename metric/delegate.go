@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DataDog/go-python3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/waltzofpearls/reckon/config"
 	"github.com/waltzofpearls/reckon/model"
@@ -40,7 +39,7 @@ func newDelegate(lg *zap.Logger, cf *config.Config, cl *prom.Client, data prom.M
 	descs := make(map[string]*prometheus.Desc)
 	models := make(map[string]model.Trainer)
 	for _, modelName := range modelNames {
-		mod, err := model.New(lg, modelName)
+		mod, err := model.New(cf, lg, modelName)
 		if err != nil {
 			lg.Error("cannot create model", zap.String("model", modelName),
 				zap.String("original_metric", data.Name), zap.Error(err))
@@ -113,7 +112,7 @@ func (d *delegate) query() string {
 	return fmt.Sprintf("%s{%s}", d.original.Name, strings.Join(labels, ","))
 }
 
-func (d *delegate) train(ctx context.Context, module *python3.PyObject) {
+func (d *delegate) train(ctx context.Context) {
 	logger := d.logger.With(zap.String("prom_url", d.config.PromClientURL),
 		zap.String("metric_name", d.original.Name), zap.Any("metric_labels", d.original.Labels))
 
@@ -131,20 +130,20 @@ func (d *delegate) train(ctx context.Context, module *python3.PyObject) {
 	from := time.Now().UTC().Add(-duration)
 	to := time.Now().UTC()
 
-	fromField, toField := zap.Time("from", from), zap.Time("to", to)
-	logger.Info("query prometheus and fetch metrics data", fromField, toField)
+	queryField, fromField, toField := zap.String("query", query), zap.Time("from", from), zap.Time("to", to)
+	logger.Info("query prometheus and fetch metrics data", queryField, fromField, toField)
 	d.runtimeRegistry.nowAll(d.modelNames, "reckon_prometheus_client_scrape_time_seconds")
 	d.runtimeRegistry.incAll(d.modelNames, "reckon_prometheus_client_scrape_total")
 	d.runtimeRegistry.setAll(d.modelNames, "reckon_data_scraped_duration_minutes", duration.Minutes())
 
 	data, err := d.client.GetMetricRangeData(ctx, query, from, to, 0)
 	if err != nil {
-		logger.Error("failed querying prometheus data range", fromField, toField, zap.Error(err))
+		logger.Error("failed querying prometheus data range", queryField, fromField, toField, zap.Error(err))
 		d.runtimeRegistry.incAll(d.modelNames, "reckon_prometheus_client_scrape_errors_total")
 		return
 	}
 	if len(data) == 0 {
-		logger.Info("no data from range query", fromField, toField, zap.Error(err))
+		logger.Info("no data from range query", queryField, fromField, toField, zap.Error(err))
 		return
 	}
 	d.runtimeRegistry.setAll(d.modelNames, "reckon_data_scraped_values", float64(len(data[0].Values)))
@@ -173,7 +172,7 @@ func (d *delegate) train(ctx context.Context, module *python3.PyObject) {
 			defer func() {
 				d.runtimeRegistry.set(modelName, "reckon_model_train_duration_seconds", time.Since(now).Seconds())
 			}()
-			d.forecasts[modelName], err = mod.Train(ctx, module, d.original, duration)
+			d.forecasts[modelName], err = mod.Train(ctx, d.original, duration)
 			if err != nil {
 				logger.Error("unable to train model", zap.Error(err))
 				d.runtimeRegistry.inc(modelName, "reckon_model_train_errors_total")

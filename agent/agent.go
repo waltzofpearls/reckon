@@ -6,7 +6,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/DataDog/go-python3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/waltzofpearls/reckon/config"
 	"github.com/waltzofpearls/reckon/metric"
@@ -17,16 +16,11 @@ import (
 )
 
 func Run(lg *zap.Logger, info *config.BuildInfo) error {
-	module, cleanup, err := model.InitPythonModule(lg)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
 	prom.RegisterExporterEndpoints()
-	return reloadLoop(lg, info, module)
+	return reloadLoop(lg, info)
 }
 
-func reloadLoop(lg *zap.Logger, info *config.BuildInfo, module *python3.PyObject) error {
+func reloadLoop(lg *zap.Logger, info *config.BuildInfo) error {
 	reload := make(chan bool, 1)
 	reload <- true
 	for <-reload {
@@ -34,9 +28,9 @@ func reloadLoop(lg *zap.Logger, info *config.BuildInfo, module *python3.PyObject
 
 		ctx, cancel := context.WithCancel(context.Background())
 
-		signals := make(chan os.Signal)
-		signal.Notify(signals, os.Interrupt, syscall.SIGHUP,
-			syscall.SIGTERM, syscall.SIGINT)
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, os.Interrupt, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGINT)
+		toSubProc := make(chan os.Signal, 1)
 		go func() {
 			sig := <-signals
 			if sig == syscall.SIGHUP {
@@ -44,10 +38,11 @@ func reloadLoop(lg *zap.Logger, info *config.BuildInfo, module *python3.PyObject
 				<-reload
 				reload <- true
 			}
+			toSubProc <- sig
 			cancel()
 		}()
 
-		err := runSchedulerAndExporter(ctx, lg, info, module)
+		err := runSchedulerAndExporter(ctx, lg, info, toSubProc)
 		if err != nil && err != context.Canceled {
 			return err
 		}
@@ -55,7 +50,7 @@ func reloadLoop(lg *zap.Logger, info *config.BuildInfo, module *python3.PyObject
 	return nil
 }
 
-func runSchedulerAndExporter(ctx context.Context, lg *zap.Logger, info *config.BuildInfo, module *python3.PyObject) error {
+func runSchedulerAndExporter(ctx context.Context, lg *zap.Logger, info *config.BuildInfo, sig chan os.Signal) error {
 	config := config.New(lg)
 	if err := config.Load(); err != nil {
 		return err
@@ -63,6 +58,7 @@ func runSchedulerAndExporter(ctx context.Context, lg *zap.Logger, info *config.B
 	client := prom.NewClient(config, lg)
 	store := metric.NewStore(lg)
 	watchlist := metric.NewWatchList(config, lg, client, store)
+	server := model.NewServer(lg, sig)
 	scheduler := metric.NewScheduler(config, lg, client, store)
 	collector := metric.NewCollector(config, lg, info, store)
 	exporter := prom.NewExporter(config, lg)
@@ -76,7 +72,8 @@ func runSchedulerAndExporter(ctx context.Context, lg *zap.Logger, info *config.B
 	defer prometheus.Unregister(collector)
 
 	g, ctx := errgroup.WithContext(ctx)
-	g.Go(scheduler.Start(ctx, module))
+	g.Go(server.Start(ctx))
+	g.Go(scheduler.Start(ctx))
 	g.Go(exporter.Start(ctx))
 	g.Go(scheduler.Shutdown(ctx))
 	g.Go(exporter.Shutdown(ctx))

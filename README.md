@@ -93,6 +93,12 @@ Reckon can be configured with the following environment variables:
 | `PROM_CLIENT_INSECURE_SKIP_VERIFY` | No          |                     | skip TLS verification on `PROM_CLIENT_URL`                                                              |
 | `DEFAULT_CHUNK_SIZE`               | Yes         | `120m`              | duration of original data to scrape                                                                     |
 | `ROLLING_WINDOW`                   | Yes         | `72h`               | duration of original data to keep for training                                                          |
+| `GRPC_SERVER_ADDRESS`              | Yes         | `localhost:18443`   | internal gRPC model server address                                                                      |
+| `GRPC_ROOT_CA`                     | Yes         |                     | gRPC mTLS root CA                                                                                       |
+| `GRPC_SERVER_CERT`                 | Yes         |                     | gRPC mTLS server cert                                                                                   |
+| `GRPC_SERVER_KEY`                  | Yes         |                     | gRPC mTLS server cert key                                                                               |
+| `GRPC_CLIENT_CERT`                 | Yes         |                     | gRPC mTLS client cert                                                                                   |
+| `GRPC_CLIENT_KEY`                  | Yes         |                     | gRPC mTLS client cert key                                                                               |
 
 ## Monitor it
 

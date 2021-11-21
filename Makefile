@@ -8,9 +8,14 @@ PROM_CLIENT_URL ?= http://prometheus.rpi.topbass.studio:9090
 PROM_EXPORTER_ADDR ?= :8080
 # comma separated list or inline yaml
 # WATCH_LIST ?= sensehat_temperature,sensehat_humidity
-# WATCH_LIST ?= {sensehat_temperature: [Prophet], sensehat_humidity: [Prophet]}
 WATCH_LIST ?= {sensehat_temperature: [Prophet], sensehat_humidity: [Prophet]}
 SCHEDULE ?= @every 10m
+GRPC_SERVER_ADDRESS ?= localhost:18443
+GRPC_ROOT_CA := $$(cat cert/gRPC_Root_CA.crt)
+GRPC_SERVER_CERT := $$(cat cert/localhost.crt)
+GRPC_SERVER_KEY := $$(cat cert/localhost.key)
+GRPC_CLIENT_CERT := $$(cat cert/grpc_client.crt)
+GRPC_CLIENT_KEY := $$(cat cert/grpc_client.key)
 
 .PHONY: all
 all: build
@@ -20,31 +25,63 @@ all: build
 		source $$VIRTUALENVWRAPPER_SCRIPT; \
 		mkvirtualenv $(APP); \
 		pip install -r ./model/requirements.txt; \
+		pip install pystan==2.19.1.1; \
+		pip install prophet==1.0.1; \
 	)
 
 .PHONY: venv
 venv: ~/.virtualenvs/$(APP)
 
 .PHONY: build
-build:
+build: cert
 	go build
 
 .PHONY: run
 run: venv build
-	PYTHONPATH=~/.virtualenvs/$(APP)/lib/python3.7/site-packages/:$$PYTHONPATH \
 	PROM_CLIENT_URL=$(PROM_CLIENT_URL) \
 	PROM_EXPORTER_ADDR=$(PROM_EXPORTER_ADDR) \
 	WATCH_LIST="$(WATCH_LIST)" \
 	SCHEDULE="$(SCHEDULE)" \
+	GRPC_SERVER_ADDRESS=$(GRPC_SERVER_ADDRESS) \
+	GRPC_ROOT_CA=$(GRPC_ROOT_CA) \
+	GRPC_SERVER_CERT=$(GRPC_SERVER_CERT) \
+	GRPC_SERVER_KEY=$(GRPC_SERVER_KEY) \
+	GRPC_CLIENT_CERT=$(GRPC_CLIENT_CERT) \
+	GRPC_CLIENT_KEY=$(GRPC_CLIENT_KEY) \
 		./$(APP)
 
 .PHONY: test
 test:
 	go test -cover -race ./...
 
-gen:
+.PHONY: mock
+mock:
 	mockgen -package=mocks -mock_names=Logger=Logger \
 		-destination=mocks/logger.go github.com/waltzofpearls/reckon/logs Logger
+
+.PHONY: proto
+proto:
+	protoc --go_out=. --go_opt=paths=source_relative \
+		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+		model/api/forecast.proto
+	python -m grpc_tools.protoc -I. --python_out=. \
+		--grpc_python_out=. model/api/forecast.proto
+	@tree -hrtC model/api
+
+cert:
+	# create CA
+	certstrap --depot-path cert init --common-name "gRPC Root CA"
+	# create server cert request
+	certstrap --depot-path cert request-cert --domain localhost
+	# create client cert request
+	certstrap --depot-path cert request-cert --cn grpc_client
+	# sign server and client cert requests
+	certstrap --depot-path cert sign --CA "gRPC Root CA" localhost
+	certstrap --depot-path cert sign --CA "gRPC Root CA" grpc_client
+	@tree -hrC cert
+
+.PHONY: gen
+gen: mock proto
 
 .PHONY: cover
 cover:
@@ -76,6 +113,12 @@ docker:
 		-e "PROM_EXPORTER_ADDR=$(PROM_EXPORTER_ADDR)" \
 		-e "WATCH_LIST=$(WATCH_LIST)" \
 		-e "SCHEDULE=$(SCHEDULE)" \
+		-e "GRPC_SERVER_ADDRESS=$(GRPC_SERVER_ADDRESS)" \
+		-e "GRPC_ROOT_CA=$(GRPC_ROOT_CA)" \
+		-e "GRPC_SERVER_CERT=$(GRPC_SERVER_CERT)" \
+		-e "GRPC_SERVER_KEY=$(GRPC_SERVER_KEY)" \
+		-e "GRPC_CLIENT_CERT=$(GRPC_CLIENT_CERT)" \
+		-e "GRPC_CLIENT_KEY=$(GRPC_CLIENT_KEY)" \
 		-p $(PORT) \
 		$(APP)/$(IMAGE)
 
