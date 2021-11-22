@@ -100,6 +100,16 @@ Reckon can be configured with the following environment variables:
 | `GRPC_CLIENT_CERT`                 | Yes         |                     | gRPC mTLS client cert                                                                                   |
 | `GRPC_CLIENT_KEY`                  | Yes         |                     | gRPC mTLS client cert key                                                                               |
 
+## Use it
+
+- Find [the latest release](https://github.com/waltzofpearls/reckon/releases) and downlaod a `.tar.gz` archive
+  for your OS and architecture.
+- Generate root CA, server and client keys and certificates for gRPC mTLS calls to Python ML models. Here is
+  an example for [generating the keys and certs with certstrap](https://github.com/waltzofpearls/reckon/blob/main/Makefile#L70-L80)
+- Deploy reckon to bare metal hosts. Here is [an example with ansible](https://github.com/waltzofpearls/rpi-ansible/blob/main/setup-reckon.yml)
+- Alternatively, [build a debian slim based docker container](https://github.com/waltzofpearls/reckon/blob/main/Makefile#L97-L126),
+  and deploy the container to kubernetes or other orchestration platforms.
+
 ## Monitor it
 
 In addition to forecasted metrics, reckon also exposes runtime metrics to help monitor reckon itself.
