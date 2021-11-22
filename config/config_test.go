@@ -39,12 +39,14 @@ func TestConfigLoad(t *testing.T) {
 				// include noop logger
 				logger: zap.NewNop(),
 				// from default values
-				Schedule:          "@every 120m",
-				Timezone:          "America/Vancouver",
-				PromExporterAddr:  ":8080",
-				Models:            []string{"Prophet"},
-				DefaultChunkSize:  120 * time.Minute,
-				GRPCServerAddress: "localhost:18443",
+				Schedule:               "@every 120m",
+				Timezone:               "America/Vancouver",
+				PromExporterAddr:       ":8080",
+				Models:                 []string{"Prophet"},
+				DefaultChunkSize:       120 * time.Minute,
+				GRPCServerAddress:      "localhost:18443",
+				GRPCClientMaxRetries:   3,
+				GRPCClientRetryBackoff: 2 * time.Second,
 				// an env var set for the test case
 				RollingWindow: 5 * time.Minute,
 				WatchList: &WatchList{

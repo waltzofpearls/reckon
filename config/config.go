@@ -32,12 +32,14 @@ type Config struct {
 	DefaultChunkSize time.Duration `envconfig:"DEFAULT_CHUNK_SIZE" default:"120m"`
 	RollingWindow    time.Duration `envconfig:"ROLLING_WINDOW" default:"72h"`
 
-	GRPCServerAddress string `envconfig:"GRPC_SERVER_ADDRESS" default:"localhost:18443"`
-	GRPCRootCA        string `envconfig:"GRPC_ROOT_CA"`
-	GRPCServerCert    string `envconfig:"GRPC_SERVER_CERT"`
-	GRPCServerKey     string `envconfig:"GRPC_SERVER_KEY"`
-	GRPCClientCert    string `envconfig:"GRPC_CLIENT_CERT"`
-	GRPCClientKey     string `envconfig:"GRPC_CLIENT_KEY"`
+	GRPCServerAddress      string        `envconfig:"GRPC_SERVER_ADDRESS" default:"localhost:18443"`
+	GRPCRootCA             string        `envconfig:"GRPC_ROOT_CA"`
+	GRPCServerCert         string        `envconfig:"GRPC_SERVER_CERT"`
+	GRPCServerKey          string        `envconfig:"GRPC_SERVER_KEY"`
+	GRPCClientCert         string        `envconfig:"GRPC_CLIENT_CERT"`
+	GRPCClientKey          string        `envconfig:"GRPC_CLIENT_KEY"`
+	GRPCClientMaxRetries   uint          `envconfig:"" default:"3"`
+	GRPCClientRetryBackoff time.Duration `envconfig:"" default:"2s"`
 
 	logger    *zap.Logger
 	location  *time.Location
