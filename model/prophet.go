@@ -4,12 +4,14 @@ import (
 	"context"
 	"time"
 
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/pkg/errors"
 	"github.com/waltzofpearls/reckon/config"
 	"github.com/waltzofpearls/reckon/model/api"
 	"github.com/waltzofpearls/reckon/prom"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type Prophet struct {
@@ -25,9 +27,6 @@ func NewProphet(cf *config.Config, lg *zap.Logger) Prophet {
 }
 
 func (p Prophet) Train(ctx context.Context, data prom.Metric, duration time.Duration) (Forecasts, error) {
-	// wait 1 second for the model server to start
-	time.Sleep(time.Second)
-
 	logger := p.logger.With(zap.String("metric_name", data.Name), zap.Any("metric_labels", data.Labels))
 	logger.Info("train model with data", zap.Int("length", len(data.Values)), zap.String("duration", duration.String()))
 
@@ -35,7 +34,16 @@ func (p Prophet) Train(ctx context.Context, data prom.Metric, duration time.Dura
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load gRPC client credentials")
 	}
-	conn, err := grpc.Dial(p.config.GRPCServerAddress, grpc.WithTransportCredentials(creds))
+	retryBackoff := grpc_retry.BackoffLinear(p.config.GRPCClientRetryBackoff)
+	retryOpts := []grpc_retry.CallOption{
+		grpc_retry.WithBackoff(retryBackoff),
+		grpc_retry.WithCodes(codes.Unavailable, codes.NotFound, codes.Aborted),
+	}
+	conn, err := grpc.Dial(p.config.GRPCServerAddress,
+		grpc.WithTransportCredentials(creds),
+		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(retryOpts...)),
+		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(retryOpts...)),
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to connect to gRPC server")
 	}
@@ -53,7 +61,8 @@ func (p Prophet) Train(ctx context.Context, data prom.Metric, duration time.Dura
 		Values:   values,
 		Duration: duration.Minutes(),
 	}
-	reply, err := client.Prophet(ctx, &request)
+	maxRetries := grpc_retry.WithMax(p.config.GRPCClientMaxRetries)
+	reply, err := client.Prophet(ctx, &request, maxRetries)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to cal gRPC method Prophet")
 	}
