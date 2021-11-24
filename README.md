@@ -99,6 +99,10 @@ Reckon can be configured with the following environment variables:
 | `GRPC_SERVER_KEY`                  | Yes         |                     | gRPC mTLS server cert key                                                                               |
 | `GRPC_CLIENT_CERT`                 | Yes         |                     | gRPC mTLS client cert                                                                                   |
 | `GRPC_CLIENT_KEY`                  | Yes         |                     | gRPC mTLS client cert key                                                                               |
+| `GPRC_SERVER_PROCESS_NUM`          | Yes         | num of logical CPUs | gRPC server - number of subprocesses                                                                    |
+| `GRPC_SERVER_THREAD_NUM`           | Yes         | `1`                 | gRPC server - number of threads on each subprocess                                                      |
+| `GRPC_SERVER_GRACE_PERIOD_IN_SECS` | Yes         | `2`                 | gRPC server - in shutdown grace period, server only sends SIGTERM to attempt shutting down subprocesses |
+| `GRPC_SERVER_KILL_PERIOD_IN_SECS`  | Yes         | `5`                 | gRPC server - shutdown kill period, server force kill any subprocesses that are still alive             |
 
 ## Use it
 

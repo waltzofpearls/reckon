@@ -73,21 +73,33 @@ func NewServer(lg *zap.Logger, sig chan os.Signal) Server {
 
 func (s Server) Start(ctx context.Context) func() error {
 	return func() error {
+		doneChan := make(chan bool)
+	restart:
 		s.logger.Info("starting python gRPC server...")
 		cancelCtx, cancelFn := context.WithCancel(context.Background())
 		subProc := exec.CommandContext(cancelCtx, "python", "model/server/main.py")
 		subProc.Stdout = os.Stdout
 		subProc.Stderr = os.Stderr
 		go func() {
-			<-ctx.Done()
+			select {
+			case <-ctx.Done():
+			case <-doneChan:
+			}
 			s.logger.Info("stopping python gRPC server...")
 			subProc.Process.Signal(<-s.signal)
-			time.AfterFunc(5*time.Second, cancelFn)
+			time.AfterFunc(30*time.Second, cancelFn)
 		}()
 		if err := subProc.Run(); err != nil {
 			switch err.(type) {
 			case *exec.ExitError:
-				s.logger.Info("stopped python gRPC server")
+				select {
+				case <-ctx.Done():
+					s.logger.Info("stopped python gRPC server")
+				default:
+					doneChan <- true
+					time.Sleep(5 * time.Second)
+					goto restart
+				}
 			default:
 				s.logger.Error("failed to run python gRPC server", zap.Error(err))
 				return err
