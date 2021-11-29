@@ -108,3 +108,5 @@ reckon
 .release-env
 .DS_Store
 cert/
+model/tangram/*.csv
+model/tangram/*.tangram

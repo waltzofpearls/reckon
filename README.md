@@ -13,19 +13,29 @@ with a defined time range, train a predictive model with those metrics, and then
 metrics back through a prometheus HTTP endpoint.
 
 An exmaple of original and forecasted metrics generated from [Prophet](https://facebook.github.io/prophet/) and
-exposed from reckon:
+[Tangram](https://www.tangram.dev/) gradient boosting model and then exposed from reckon:
 
 ```
 # HELP sensehat_humidity_prophet Prophet forecasted metric value
 # TYPE sensehat_humidity_prophet gauge
-sensehat_humidity_prophet{column="yhat",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 60.491915201576944
-sensehat_humidity_prophet{column="yhat_lower",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 59.233345022648194
-sensehat_humidity_prophet{column="yhat_upper",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 61.69595781236965
+sensehat_humidity_prophet{column="yhat",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 58.246349893997056
+sensehat_humidity_prophet{column="yhat_lower",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 57.4450973695544
+sensehat_humidity_prophet{column="yhat_upper",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 59.08650789641951
 # HELP sensehat_temperature_prophet Prophet forecasted metric value
 # TYPE sensehat_temperature_prophet gauge
-sensehat_temperature_prophet{column="yhat",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 26.479665209525724
-sensehat_temperature_prophet{column="yhat_lower",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 26.17373164147707
-sensehat_temperature_prophet{column="yhat_upper",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 26.767488257211966
+sensehat_temperature_prophet{column="yhat",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 22.196715588009724
+sensehat_temperature_prophet{column="yhat_lower",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 21.83335916260913
+sensehat_temperature_prophet{column="yhat_upper",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 22.551863453282152
+# HELP sensehat_humidity_tangram Tangram forecasted metric value
+# TYPE sensehat_humidity_tangram gauge
+sensehat_humidity_tangram{column="yhat",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 58.43156051635742
+sensehat_humidity_tangram{column="yhat_lower",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 54.96922722581767
+sensehat_humidity_tangram{column="yhat_upper",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 61.893893806897175
+# HELP sensehat_temperature_tangram Tangram forecasted metric value
+# TYPE sensehat_temperature_tangram gauge
+sensehat_temperature_tangram{column="yhat",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 21.94704246520996
+sensehat_temperature_tangram{column="yhat_lower",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 20.179807771933568
+sensehat_temperature_tangram{column="yhat_upper",instance="sensehat.rpi.topbass.studio:8000",job="sensehat_exporter"} 23.714277158486354
 ```
 
 Each metric configured in reckon will have its forecasted metric generated and exported in 3 dimensions (labels):
@@ -43,7 +53,7 @@ Gather the following info before start:
 
 - Prometheus server address, for example, `http://prometheus.rpi.topbass.studio:9090`
 - Metric names to watch and models for each metric, accepts inline YAML or comma separated list,
-  for example, `{sensehat_temperature: [Prophet], sensehat_humidity: [Prophet]}` or
+  for example, `{sensehat_temperature: [Prophet, Tangram], sensehat_humidity: [Prophet, Tangram]}` or
   `sensehat_temperature,sensehat_humidity`
 
 #### With Docker
@@ -104,6 +114,17 @@ Reckon can be configured with the following environment variables:
 | `GRPC_SERVER_GRACE_PERIOD_IN_SECS` | Yes         | `2`                 | gRPC server - in shutdown grace period, server only sends SIGTERM to attempt shutting down subprocesses |
 | `GRPC_SERVER_KILL_PERIOD_IN_SECS`  | Yes         | `5`                 | gRPC server - shutdown kill period, server force kill any subprocesses that are still alive             |
 
+
+`WATCH_LIST` accepts either inline YAML or comma separated list, for example:
+- `{sensehat_temperature: [Prophet, Tangram], sensehat_humidity: [Prophet, Tangram]}`
+- `sensehat_temperature,sensehat_humidity`
+  - When using comma separated list, `MODELS` becomes a required field
+
+Available models:
+- [Prophet](https://facebook.github.io/prophet/)
+- [Tangram](https://www.tangram.dev/) with gradient boosting tree model
+- Future plans: add ARIMA and LSTM models
+
 ## Use it
 
 - Find [the latest release](https://github.com/waltzofpearls/reckon/releases) and downlaod a `.tar.gz` archive
@@ -136,3 +157,11 @@ In addition to forecasted metrics, reckon also exposes runtime metrics to help m
 | `reckon_data_scraped_values`                   | Gauge   | number of the last scraped data points                           |
 | `reckon_forecast_data_values`                  | Gauge   | number of the existing data points kept in memory                |
 | `reckon_training_data_values`                  | Gauge   | number of data points recently sent to model for training        |
+
+Reckon exposes build info through `reckon_build_info`
+
+```
+# HELP reckon_build_info Information about reckon build.
+# TYPE reckon_build_info gauge
+reckon_build_info{commit="c5159d0375d59b0255069eeec3fe3d3ccfe42207",date="2021-11-24T08:05:34Z",go_version="1.16.10",goreleaser_version="0.174.0",python_version="3.7.12",version="0.5.2"} 1
+```

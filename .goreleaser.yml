@@ -13,10 +13,27 @@ changelog:
     - Merge pull request
     - Merge branch
 builds:
-  - id: linux-armhf
+  #- id: linux-armhf
+  #  goos: [linux]
+  #  goarch: [arm]
+  #  goarm: [7]
+  #  env:
+  #    - CGO_ENABLED=1
+  #    - CC=arm-linux-gnueabihf-gcc
+  #    - CXX=arm-linux-gnueabihf-g++
+  #  flags:
+  #    - -mod=readonly
+  #    - -trimpath
+  #  ldflags:
+  #    - |
+  #      -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+  #      -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
+  #      -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
+  - id: linux-amd64
     goos: [linux]
-    goarch: [arm]
-    goarm: [7]
+    goarch: [amd64]
+    env:
+      - CGO_ENABLED=1
     flags:
       - -mod=readonly
       - -trimpath
@@ -25,9 +42,47 @@ builds:
         -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
         -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
         -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
-  - id: everything-else
-    goos: [linux, darwin]
-    goarch: [amd64, arm64]
+  - id: linux-arm64
+    goos: [linux]
+    goarch: [arm64]
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    flags:
+      - -mod=readonly
+      - -trimpath
+    ldflags:
+      - |
+        -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+        -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
+        -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
+  - id: darwin-amd64
+    goos: [darwin]
+    goarch: [amd64]
+    env:
+      - CGO_ENABLED=1
+      - PATH=$PATH:/usr/local/osxcross/bin
+      - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/osxcross/lib
+      - CC=o64-clang
+      - CXX=o64-clang++
+    flags:
+      - -mod=readonly
+      - -trimpath
+    ldflags:
+      - |
+        -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+        -X main.goVersion={{.Env.GO_VERSION}} -X main.pythonVersion={{.Env.PYTHON_VERSION}}
+        -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
+  - id: darwin-arm64
+    goos: [darwin]
+    goarch: [arm64]
+    env:
+      - CGO_ENABLED=1
+      - PATH=$PATH:/usr/local/osxcross/bin
+      - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/osxcross/lib
+      - CC=oa64-clang
+      - CXX=oa64-clang++
     flags:
       - -mod=readonly
       - -trimpath
@@ -38,13 +93,17 @@ builds:
         -X main.goreleaserVersion={{.Env.GORELEASER_VERSION}}
 archives:
   - builds:
-      - linux-armhf
-      - everything-else
+      #- linux-armhf
+      - linux-amd64
+      - linux-arm64
+      - darwin-amd64
+      - darwin-arm64
     wrap_in_directory: true
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - src: LICENSE
       - src: README.md
       - src: model/**/*.py
+      - src: model/tangram/config.json
       - src: model/requirements.txt
       - src: model/README.md

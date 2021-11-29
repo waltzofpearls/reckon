@@ -2,12 +2,13 @@ APP := reckon
 PYTHON_VERSION := 3.7.12
 GO_VERSION := 1.16.10
 GORELEASER_VERSION := 0.174.0
+OSX_SDK_VERSION := 11.3
 PORT := 8080:8080
 PROM_CLIENT_URL ?= http://prometheus.rpi.topbass.studio:9090
 PROM_EXPORTER_ADDR ?= :8080
 # comma separated list or inline yaml
 # WATCH_LIST ?= sensehat_temperature,sensehat_humidity
-WATCH_LIST ?= {sensehat_temperature: [Prophet], sensehat_humidity: [Prophet]}
+WATCH_LIST ?= {sensehat_temperature: [Prophet, Tangram], sensehat_humidity: [Prophet, Tangram]}
 SCHEDULE ?= @every 10m
 GRPC_SERVER_ADDRESS ?= localhost:18443
 GRPC_ROOT_CA := $$(cat cert/gRPC_Root_CA.crt)
@@ -142,6 +143,7 @@ release-base:
 		--build-arg "PYTHON_VERSION=$(PYTHON_VERSION)" \
 		--build-arg "GO_VERSION=$(GO_VERSION)" \
 		--build-arg "GORELEASER_VERSION=$(GORELEASER_VERSION)" \
+		--build-arg "OSX_SDK_VERSION=$(OSX_SDK_VERSION)" \
 		-t $(APP)/release \
 		-f release.Dockerfile \
 		.

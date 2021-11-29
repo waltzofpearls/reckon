@@ -27,8 +27,9 @@ func NewProphet(cf *config.Config, lg *zap.Logger) Prophet {
 }
 
 func (p Prophet) Train(ctx context.Context, data prom.Metric, duration time.Duration) (Forecasts, error) {
-	logger := p.logger.With(zap.String("metric_name", data.Name), zap.Any("metric_labels", data.Labels))
-	logger.Info("train model with data", zap.Int("length", len(data.Values)), zap.String("duration", duration.String()))
+	logger := p.logger.With(zap.String("metric_name", data.Name), zap.Any("metric_labels", data.Labels),
+		zap.Int("data_length", len(data.Values)), zap.String("want_duration", duration.String()))
+	logger.Info("train model with data")
 
 	creds, err := p.config.GRPCClientCreds()
 	if err != nil {
@@ -48,6 +49,9 @@ func (p Prophet) Train(ctx context.Context, data prom.Metric, duration time.Dura
 		return nil, errors.Wrap(err, "failed to connect to gRPC server")
 	}
 	defer conn.Close()
+
+	logger.Info("start prophet training")
+	start := time.Now()
 
 	client := api.NewForecastClient(conn)
 	values := make([]*api.SamplePair, len(data.Values))
@@ -78,6 +82,9 @@ func (p Prophet) Train(ctx context.Context, data prom.Metric, duration time.Dura
 			},
 		})
 	}
+
+	logger.Info("prophet training completed",
+		zap.Stringer("elapsed", time.Since(start)), zap.Int("forecasts", len(forecasts)))
 
 	return forecasts, nil
 }
