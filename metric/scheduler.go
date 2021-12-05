@@ -46,6 +46,8 @@ func (s *Scheduler) Start(ctx context.Context) func() error {
 				}()
 			})
 		}); err != nil {
+			s.logger.Error("failed to schedule cron job",
+				zap.String("schedule", s.config.Schedule), zap.Error(err))
 			return err
 		}
 
