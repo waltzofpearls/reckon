@@ -41,7 +41,7 @@ func TestConfigLoad(t *testing.T) {
 				// from default values
 				Schedule:               "@every 120m",
 				Timezone:               "America/Vancouver",
-				PromExporterAddr:       ":8080",
+				PromExporterAddr:       ":9999",
 				Models:                 []string{"Prophet"},
 				DefaultChunkSize:       120 * time.Minute,
 				GRPCServerAddress:      "localhost:18443",

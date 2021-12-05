@@ -1,11 +1,11 @@
 APP := reckon
-PYTHON_VERSION := 3.7.12
+PYTHON_VERSION := 3.8.12
 GO_VERSION := 1.16.10
 GORELEASER_VERSION := 0.174.0
 OSX_SDK_VERSION := 11.3
-PORT := 8080:8080
+PORT := 9999:9999
 PROM_CLIENT_URL ?= http://prometheus.rpi.topbass.studio:9090
-PROM_EXPORTER_ADDR ?= :8080
+PROM_EXPORTER_ADDR ?= :9999
 # comma separated list or inline yaml
 # WATCH_LIST ?= sensehat_temperature,sensehat_humidity
 WATCH_LIST ?= {sensehat_temperature: [Prophet, Tangram], sensehat_humidity: [Prophet, Tangram]}

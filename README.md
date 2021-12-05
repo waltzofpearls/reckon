@@ -75,8 +75,8 @@ Go, Python and Virtualenv. Make sure you have Go 1.16+ and Python 3.7
 - Pyenv: `brew install pyenv` or [follow this guide](https://github.com/pyenv/pyenv#installation)
 - Python3.7
   - find a Python 3.7 version with `pyenv install -l | grep '^\s*3.7'`
-  - select a version (eg. `3.7.12`) and install it with `pyenv install 3.7.12`
-  - switch to the installed version `pyenv global 3.7.12`
+  - select a version (eg. `3.8.12`) and install it with `pyenv install 3.8.12`
+  - switch to the installed version `pyenv global 3.8.12`
 - Virtualenvwrapper: `pip install virtualenvwrapper` AND [follow this guide](https://virtualenvwrapper.readthedocs.io/en/latest/install.html)
 
 ```shell
@@ -95,7 +95,7 @@ Reckon can be configured with the following environment variables:
 | `TIMEZONE`                         | Yes         | `America/Vancouver` | timezone for calculating schedule                                                                       |
 | `WATCH_LIST`                       | Yes         |                     | metrics to scrape, YAML (model names specified on each metric) or comma separated list (needs `MODELS`) |
 | `MODELS`                           | Yes         | `Prophet`           | ML models for training and forecasting, required if `WATCH_LIST` is a comma separated list              |
-| `PROM_EXPORTER_ADDR`               | Yes         | `:8080`             | address for reckon to expose forecasted metrics                                                         |
+| `PROM_EXPORTER_ADDR`               | Yes         | `:9999`             | address for reckon to expose forecasted metrics                                                         |
 | `PROM_CLIENT_URL`                  | Yes         |                     | reckon will scrape metrics from this URL                                                                |
 | `PROM_CLIENT_TLS_CA`               | No          |                     | CA cert if `PROM_CLIENT_URL` is https                                                                   |
 | `PROM_CLIENT_TLS_CERT`             | No          |                     | TLS cert if `PROM_CLIENT_URL` is https                                                                  |
@@ -163,5 +163,5 @@ Reckon exposes build info through `reckon_build_info`
 ```
 # HELP reckon_build_info Information about reckon build.
 # TYPE reckon_build_info gauge
-reckon_build_info{commit="c5159d0375d59b0255069eeec3fe3d3ccfe42207",date="2021-11-24T08:05:34Z",go_version="1.16.10",goreleaser_version="0.174.0",python_version="3.7.12",version="0.5.2"} 1
+reckon_build_info{commit="c5159d0375d59b0255069eeec3fe3d3ccfe42207",date="2021-11-24T08:05:34Z",go_version="1.16.10",goreleaser_version="0.174.0",python_version="3.8.12",version="0.5.2"} 1
 ```

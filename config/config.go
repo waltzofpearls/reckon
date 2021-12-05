@@ -18,7 +18,7 @@ type Config struct {
 	Schedule string `envconfig:"SCHEDULE" default:"@every 120m"`
 	Timezone string `envconfig:"TIMEZONE" default:"America/Vancouver"`
 
-	PromExporterAddr string `envconfig:"PROM_EXPORTER_ADDR" default:":8080"`
+	PromExporterAddr string `envconfig:"PROM_EXPORTER_ADDR" default:":9999"`
 
 	PromClientURL                string `envconfig:"PROM_CLIENT_URL"`
 	PromClientTLSCA              string `envconfig:"PROM_CLIENT_TLS_CA"`

@@ -39,6 +39,7 @@ func (e *Exporter) Start(ctx context.Context) func() error {
 		addrField := zap.String("addr", e.config.PromExporterAddr)
 		e.logger.Info("starting prometheus exporter server...", addrField)
 		if err := e.server.ListenAndServe(); err != http.ErrServerClosed {
+			e.logger.Error("prometheus exporter server stopped", zap.Error(err))
 			return fmt.Errorf("prometheus exporter server stopped: %w", err)
 		}
 		e.logger.Info("prometheus exporter server stopped", addrField)
@@ -56,7 +57,8 @@ func (e *Exporter) Shutdown(ctx context.Context) func() error {
 		defer cancel()
 
 		if err := e.server.Shutdown(timeout); err != nil {
-			err = fmt.Errorf("failed to gracefully stop prometheus exporter server: %w", err)
+			e.logger.Error("failed to gracefully stop prometheus exporter server", zap.Error(err))
+			return fmt.Errorf("failed to gracefully stop prometheus exporter server: %w", err)
 		}
 		return nil
 	}
