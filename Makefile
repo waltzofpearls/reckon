@@ -93,7 +93,7 @@ cover:
 IMAGE := build
 VERSION := $(shell git describe --tags $(git rev-list --tags --max-count=1) | sed 's/^v//g')
 OS := linux
-ARCH := amd64
+ARCH := $(shell arch)
 
 .PHONY: docker
 docker:
@@ -108,6 +108,9 @@ docker:
 		-t $(APP)/$(IMAGE) \
 		-f $(IMAGE).Dockerfile \
 		.
+	make docker-run
+
+docker-run:
 	docker run --rm \
 		-e "PROM_CLIENT_URL=$(PROM_CLIENT_URL)" \
 		-e "PROM_EXPORTER_ADDR=$(PROM_EXPORTER_ADDR)" \
@@ -127,6 +130,23 @@ debian:
 	make docker IMAGE=debian
 
 # no alpine because https://pythonspeed.com/articles/alpine-docker-python/
+.PHONY: alpine
+alpine:
+	make docker IMAGE=alpine
+
+.PHONY: dockerhub
+dockerhub:
+	make docker IMAGE=dockerhub OS=linux ARCH=arm64
+	docker build \
+		--progress=plain \
+		--build-arg "PYTHON_VERSION=$(PYTHON_VERSION)" \
+		--build-arg "VERSION=$(VERSION)" \
+		--build-arg "TARGETOS=$(OS)" \
+		--build-arg "TARGETARCH=$(ARCH)" \
+		-t $(APP)/$@ \
+		-f $@.Dockerfile \
+		.
+	make docker-run
 
 .PHONY: release
 release:

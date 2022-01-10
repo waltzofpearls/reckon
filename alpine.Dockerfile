@@ -1,5 +1,4 @@
 ARG PYTHON_VERSION
-
 FROM python:${PYTHON_VERSION}-alpine3.13
 
 RUN apk add -U --no-cache \
@@ -11,10 +10,7 @@ RUN apk add -U --no-cache \
         zlib-dev \
         jpeg-dev
 
-ARG APP
-ARG VERSION
-ARG OS
-ARG ARCH
+ARG APP VERSION OS ARCH
 RUN curl -L https://github.com/waltzofpearls/${APP}/releases/download/v${VERSION}/${APP}_${VERSION}_${OS}_${ARCH}.tar.gz | tar xvz \
  && mv ${APP}_${VERSION}_${OS}_${ARCH} reckon \
  && cd reckon \

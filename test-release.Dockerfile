@@ -1,5 +1,4 @@
 ARG PYTHON_VERSION
-
 FROM python:${PYTHON_VERSION}-slim-buster
 
 RUN apt-get update; \

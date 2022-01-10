@@ -1,5 +1,3 @@
-ARG GO_VERSION
-
 FROM debian:buster-slim AS osxcross
 ARG OSX_SDK_VERSION
 RUN apt-get update \
@@ -23,6 +21,7 @@ RUN git clone https://github.com/tpoechtrager/osxcross.git \
 RUN cd osxcross \
  && UNATTENDED=yes ./build.sh
 
+ARG GO_VERSION
 FROM golang:${GO_VERSION}-buster
 COPY --from=osxcross /osxcross/target/ /usr/local/osxcross/
 RUN apt-get update \
