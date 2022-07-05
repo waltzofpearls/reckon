@@ -25,4 +25,4 @@ setuptools-git==1.2
 six==1.16.0
 tenacity==8.0.1
 tqdm==4.61.1
-ujson==4.0.2
+ujson==5.4.0
