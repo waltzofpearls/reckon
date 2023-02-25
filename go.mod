@@ -23,7 +23,7 @@ require (
 	golang.org/x/exp v0.0.0-20211123021643-48cbe7f80d7c // indirect
 	golang.org/x/net v0.0.0-20211116231205-47ca1ff31462 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20211116061358-0a5406a5449c // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	gonum.org/v1/gonum v0.9.3
 	google.golang.org/genproto v0.0.0-20211116182654-e63d96a377c4 // indirect
 	google.golang.org/grpc v1.42.0
